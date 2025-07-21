@@ -65,3 +65,27 @@ public:
     }
 };
 ```
+
+```python
+from typing import List
+
+class Solution:
+    def maxSlidingWindow(self, nums: List[int], k: int) -> List[int]:
+        from collections import deque
+        # 单调队列，存放索引
+        q = deque()
+        res = []
+
+        for i, x in enumerate(nums):
+            while q and nums[q[-1]] <= x:
+                q.pop() 
+            q.append(i)
+            if i >= k - 1:
+                while q and q[0] < i - k + 1:
+                    q.popleft()
+                if q: 
+                    res.append(nums[q[0]])
+                else: 
+                    res.append(None)
+        return res
+```
