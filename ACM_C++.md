@@ -7,7 +7,7 @@
 
 
 
-基础初始化配置：
+基础环境初始化配置：
 ```cpp
 #include <iostream>
 #include <algorithm>
@@ -16,6 +16,7 @@
 
 // 类型别名
 using ll = long long;
+using ull = unsigned long long;
 // 内置工具使用使用
 using std::string;
 
@@ -332,7 +333,7 @@ namespace Sorting {
 
     // 冒泡排序模板函数（默认升序）
     template <typename T>
-    void bubbleSort(T arr[], int n, bool ascending = true) {
+    void bubble_sort(T arr[], int n, bool ascending = true) {
         for (int i = 0; i < n - 1; ++i) {
             bool swapped = false;
             for (int j = 0; j < n - i - 1; ++j) {
@@ -345,20 +346,26 @@ namespace Sorting {
         }
     }
 
-} // namespace Sorting
-
-
+}
 
 
 // bubbleSort 冒泡排序
 int arr[] = {5, 2, 9, 1, 5, 6};
 int n = sizeof(arr) / sizeof(arr[0]);
 
-Sorting::bubbleSort(arr, n); // 调用命名空间下的函数
+Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 ```
 
 
 #### 冒泡排序
+
+### 模拟
+
+### 贪心
+
+
+### 枚举
+
 
 
 ### 离散化
@@ -366,17 +373,17 @@ Sorting::bubbleSort(arr, n); // 调用命名空间下的函数
 namespace Discretization {
     // 对数组 a[1..n] 进行离散化
     // 返回离散化后的 vals（去重排序后的值域）
-    vector<int> discretize(int a[], int n) {
-        vector<int> vals(a + 1, a + n + 1);
+    std::vector<int> discretize(int a[], int n) {
+        std::vector<int> vals(a + 1, a + n + 1);
 
         // 排序 + 去重
         std::sort(vals.begin(), vals.end());
-        vals.erase(unique(vals.begin(), vals.end()), vals.end());
+        vals.erase(std::unique(vals.begin(), vals.end()), vals.end());
 
         // 替换为离散化编号
         for (int i = 1; i <= n; ++i) {
             // a数组修改为值域表中的编号
-            a[i] = lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin() + 1;
+            a[i] = std::lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin() + 1;
             // 如果你想让离散化从 0 开始就删掉 +1
         }
 
@@ -410,7 +417,7 @@ void dfs(int u) {
 }
 ```
 
-深度优先搜索
+深度优先搜索（依赖vis访问数组 判断是否访问过）
 
 
 
@@ -445,15 +452,19 @@ void bfs(int start) {
 }
 ```
 
-宽度优先搜索
+宽度优先搜索（依赖队列先进先出特性）
+
+
+
+#### 双指针
 
 
 
 
 ### 二分查找
 ```c++
-//在升序序列中二分查找某数 x 的位置，二分区间为 [left,right]，如果不存在，返回-1
 namespace Searching {
+    //在升序序列中二分查找某数 x 的位置，二分区间为 [left,right]，如果不存在，返回-1
     int binary_search(int arr[], int left, int right, int v) {
         while (left <= right) {
             int mid = (left + right) >> 1;
@@ -472,6 +483,7 @@ namespace Searching {
 
 
 ### 差分
+
 差分 是一个非常实用又简单的技巧，特别适合处理：
 - 区间加
 - 区间减
@@ -480,85 +492,132 @@ namespace Searching {
 
 
 #### 一维差分
+
+
+
+##### 区间加
 ```c++
-const int N = 1e5 + 10;
-int a[N], b[N];
-int n, m;
+struct DiffArray {
+    int n;
+    vector<long long> diff;
 
-// 差分原理，构造前缀和还原该元素，
-// l 加上、r + 1减去
-void add(int l, int r, int k) {
-    b[l] += k;
-    b[r + 1] -= k;
-}
-
-int main() {
-    cin >> n >> m;
-    for (int i = 1; i <= n; ++i) {
-        cin >> a[i];
-        b[i] = a[i] - a[i - 1];  // 差分初始化
+    // 1) 支持 vector<long long>，a[0] 忽略，1..n
+    DiffArray(const vector<long long>& a) {
+        n = a.size() - 1;          // 假设 a[1..n]
+        diff.assign(n + 2, 0); // n + 2 是因为 索引从1开始，操作时会用到n+1（前后共2个）
+        for (int i = 1; i <= n; ++i) {
+            diff[i] = a[i] - a[i - 1];
+        }
     }
 
-    while (m--) {
-        int l, r, k;
-        cin >> l >> r >> k;
-        add(l, r, k);
+    // 2) 支持 C 数组构造（a 为 1..n）
+    DiffArray(const long long* a, int _n) {
+        n = _n;
+        diff.assign(n + 2, 0);
+        diff[1] = a[1];
+        for (int i = 2; i <= n; ++i) {
+            diff[i] = a[i] - a[i - 1];
+        }
     }
 
-    // 还原
-    for (int i = 1; i <= n; ++i) {
-        b[i] += b[i - 1];
-        cout << b[i] << " ";
+    // 区间加：对 [l, r] 每个元素加 k
+    void add(int l, int r, long long k) {
+        diff[l] += k;
+        if (r + 1 <= n) diff[r + 1] -= k;
     }
-}
+
+    // 还原并返回 vector（1..n）
+    vector<long long> result() const {
+        vector<long long> res(n + 1);
+        long long cur = 0;
+        for (int i = 1; i <= n; ++i) {
+            cur += diff[i];
+            res[i] = cur;
+        }
+        return res;
+    }
+
+    // 还原结果写回 C 数组（a[1..n]）
+    void write_back(long long* a) const {
+        long long cur = 0;
+        for (int i = 1; i <= n; ++i) {
+            cur += diff[i];
+            a[i] = cur;
+        }
+    }
+};
+
+
+vector<long long> a(n + 1);
+for (int i = 1; i <= n; ++i) cin >> a[i];
+
+DiffArray df(a);
+
+df.add(2, 5, 3);  // 区间加
+
+auto res = df.result();
 ```
 
 
 
 #### 二维差分
+
+
+##### 区间加
 ```c++
-const int N = 1010;
-int a[N][N], b[N][N];
-int n, m, q;
+struct Diff2D {
+    int n, m;
+    vector<vector<int>> diff;
 
-void insert(int x1, int y1, int x2, int y2, int k) {
-    b[x1][y1] += k;
-    b[x2 + 1][y1] -= k;
-    b[x1][y2 + 1] -= k;
-    b[x2 + 1][y2 + 1] += k;
-}
+    // 构造空差分矩阵
+    Diff2D(int n, int m) : n(n), m(m), diff(n + 2, vector<int>(m + 2, 0)) {}
 
-int main() {
-    cin >> n >> m >> q;
-    
-    // 输入原始矩阵 a，并初始化差分矩阵 b
-    for (int i = 1; i <= n; ++i)
-        for (int j = 1; j <= m; ++j) {
-            cin >> a[i][j];
-            insert(i, j, i, j, a[i][j]); // 初始值单点插入到差分数组中
-        }
-
-    // 多次操作：对矩形加值
-    while (q--) {
-        int x1, y1, x2, y2, k;
-        cin >> x1 >> y1 >> x2 >> y2 >> k;
-        insert(x1, y1, x2, y2, k);
+    // 用原始矩阵构造（支持二维 C 数组）
+    Diff2D(int a[][1010], int n, int m) : n(n), m(m), diff(n + 2, vector<int>(m + 2, 0)) {
+        for (int i = 1; i <= n; ++i)
+            for (int j = 1; j <= m; ++j)
+                insert(i, j, i, j, a[i][j]);
     }
 
-    // 用二维前缀和还原最终矩阵
-    for (int i = 1; i <= n; ++i)
-        for (int j = 1; j <= m; ++j)
-            b[i][j] = b[i][j] + b[i - 1][j] + b[i][j - 1] - b[i - 1][j - 1];
-
-    // 输出结果矩阵
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j)
-            cout << b[i][j] << " ";
-        cout << endl;
+    // 在矩形 (x1, y1) 到 (x2, y2) 加 k
+    inline void insert(int x1, int y1, int x2, int y2, int k) {
+        diff[x1][y1] += k;
+        diff[x2 + 1][y1] -= k;
+        diff[x1][y2 + 1] -= k;
+        diff[x2 + 1][y2 + 1] += k;
     }
 
-    return 0;
+    // 还原得到最终矩阵
+    vector<vector<int>> build() {
+        vector<vector<int>> res(n + 1, vector<int>(m + 1, 0));
+
+        for (int i = 1; i <= n; ++i)
+            for (int j = 1; j <= m; ++j)
+                res[i][j] = diff[i][j]
+                            + res[i - 1][j]
+                            + res[i][j - 1]
+                            - res[i - 1][j - 1];
+
+        return res;
+    }
+};
+
+vector<vector<int>> a(n + 1, vector<int>(m + 1));
+Diff2D diff(n, m);
+// 输入原始矩阵并初始化差分
+for (int i = 1; i <= n; ++i)
+    for (int j = 1; j <= m; ++j) {
+        cin >> a[i][j];
+        diff.insert(i, j, i, j, a[i][j]);
+    }
+// 多次操作：矩形区域加 k
+while (q--) {
+    int x1, y1, x2, y2, k;
+    cin >> x1 >> y1 >> x2 >> y2 >> k;
+    diff.insert(x1, y1, x2, y2, k);
 }
+// 还原结果
+auto res = diff.build();
 ```
 
 ![二维差分原理](.assets/二维差分原理.png)
@@ -566,42 +625,6 @@ int main() {
 
 
 ### 分块
-```c++
-#include <iostream>
-#include <cmath>
-using namespace std;
-
-const int N = 1e5 + 10;
-int a[N], block[N];  // a 是原数组，block 是每块的和
-int n, m;
-int len;  // 每块的大小
-int belong[N]; // belong[i] 表示下标 i 属于哪一块
-
-void build() {
-    len = sqrt(n);  // 每块长度
-    for (int i = 1; i <= n; ++i) {
-        belong[i] = (i - 1) / len + 1;
-        block[belong[i]] += a[i];
-    }
-}
-
-void update(int x, int k) {
-    block[belong[x]] += k - a[x];
-    a[x] = k;
-}
-
-int query(int l, int r) {
-    int res = 0;
-    if (belong[l] == belong[r]) {
-        for (int i = l; i <= r; ++i) res += a[i];
-    } else {
-        for (int i = l; belong[i] == belong[l]; ++i) res += a[i];
-        for (int i = belong[l] + 1; i < belong[r]; ++i) res += block[i];
-        for (int i = r; belong[i] == belong[r]; --i) res += a[i];
-    }
-    return res;
-}
-```
 
 分块是一种典型的空间换时间的数据结构技巧，非常适合处理：
 - 区间查询（区间和、最大最小值、异或等）
@@ -609,70 +632,140 @@ int query(int l, int r) {
 - 单点修改 + 区间查询
 
 
-### 莫队
+#### 区间求和
 ```c++
-// 问题：给定一个数组 a[1..n] 和 m 次查询，每次查询区间 [l, r] 中不同数字的个数
+struct SqrtBlock {
+    int n, len, numBlocks;
+    vector<long long> a;       // 原数组
+    vector<long long> sum;     // 每块的和
+    vector<long long> lazy;    // 懒标记：整块加
 
-const int N = 1e5 + 10;
-// cnt[x] 表示值为 x 的数有几个（用于去重）
-// ans[N] 每个查询的答案
-//  block 分块大小 = sqrt(n)
-int a[N], cnt[N], ans[N], block;
-int n, m, res = 0;
+    SqrtBlock(int n): n(n) {
+        len = sqrt(n) + 1;
+        numBlocks = (n + len - 1) / len;
 
-struct Query {
-    int l, r, id;
-    bool operator<(const Query &q) const {
-        int lb = l / block, rb = q.l / block;
-        // 首先根据l的块编号排序
-        if (lb != rb) return lb < rb;
-
-        // 奇偶块交替让 R 指针来回少一点，从而让滑动距离更短
-        return (lb & 1) ? (r < q.r) : (r > q.r); // 可选奇偶优化
+        a.assign(n + 1, 0);
+        sum.assign(numBlocks + 1, 0);
+        lazy.assign(numBlocks + 1, 0);
     }
-} q[N];
 
-// 添加一个位置
-void add(int x) {
-    if (cnt[x]++ == 0) ++res;
+    // 从数组构造
+    void build() {
+        for (int i = 1; i <= n; ++i) {
+            sum[(i-1)/len] += a[i];
+        }
+    }
+
+    // 对块应用 lazy 标记
+    void push_down(int b) {
+        if (lazy[b] == 0) return;
+        int L = b * len + 1;
+        int R = min(n, (b + 1) * len);
+        for (int i = L; i <= R; ++i) a[i] += lazy[b];
+        lazy[b] = 0;
+    }
+
+    // 单点更新：a[x] = v
+    void point_update(int x, long long v) {
+        int b = (x - 1) / len;
+        push_down(b);
+        sum[b] += v - a[x];
+        a[x] = v;
+    }
+
+    // 区间加：对 [l, r] 所有加 k
+    void range_add(int l, int r, long long k) {
+        int bl = (l - 1) / len;
+        int br = (r - 1) / len;
+
+        if (bl == br) {
+            push_down(bl);
+            for (int i = l; i <= r; ++i) {
+                a[i] += k;
+                sum[bl] += k;
+            }
+            return;
+        }
+
+        // 左边块
+        push_down(bl);
+        for (int i = l; (i - 1) / len == bl; ++i) {
+            a[i] += k;
+            sum[bl] += k;
+        }
+
+        // 中间整块
+        for (int b = bl + 1; b < br; ++b) {
+            lazy[b] += k;
+            sum[b] += k * len;
+        }
+
+        // 右边块
+        push_down(br);
+        for (int i = r; (i - 1) / len == br; --i) {
+            a[i] += k;
+            sum[br] += k;
+        }
+    }
+
+    // 区间查询：求 [l, r] 的和
+    long long range_query(int l, int r) {
+        long long res = 0;
+        int bl = (l - 1) / len;
+        int br = (r - 1) / len;
+
+        if (bl == br) {
+            push_down(bl);
+            for (int i = l; i <= r; ++i) res += a[i];
+            return res;
+        }
+
+        // 左边块散点
+        push_down(bl);
+        for (int i = l; (i - 1) / len == bl; ++i) res += a[i];
+
+        // 中间整块
+        for (int b = bl + 1; b < br; ++b) {
+            res += sum[b];
+        }
+
+        // 右边块散点
+        push_down(br);
+        for (int i = r; (i - 1) / len == br; --i) res += a[i];
+
+        return res;
+    }
+};
+
+
+SqrtBlock sb(n);
+for (int i = 1; i <= n; ++i) {
+    cin >> sb.a[i];
 }
-
-// 删除一个位置
-void remove(int x) {
-    if (--cnt[x] == 0) --res;
-}
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    cin >> n >> m;
-    block = sqrt(n); // 每块大小
-    for (int i = 1; i <= n; ++i) cin >> a[i];
-
-    for (int i = 0; i < m; ++i) {
-        cin >> q[i].l >> q[i].r;
-        q[i].id = i;
+sb.build();
+while (q--) {
+    int op;
+    cin >> op;
+    if (op == 1) {
+        int x, v;
+        cin >> x >> v;
+        sb.point_update(x, v);
+    } else if (op == 2) {
+        int l, r, k;
+        cin >> l >> r >> k;
+        sb.range_add(l, r, k);
+    } else {
+        int l, r;
+        cin >> l >> r;
+        cout << sb.range_query(l, r) << "\n";
     }
-
-    sort(q, q + m);
-
-    int l = 1, r = 0;
-    for (int i = 0; i < m; ++i) {
-        while (l > q[i].l) add(a[--l]);
-        while (r < q[i].r) add(a[++r]);
-        while (l < q[i].l) remove(a[l++]);
-        while (r > q[i].r) remove(a[r--]);
-
-        ans[q[i].id] = res;
-    }
-
-    for (int i = 0; i < m; ++i)
-        cout << ans[i] << '\n';
-
-    return 0;
 }
 ```
+
+
+
+
+### 莫队
 
 离线查询
 
@@ -685,63 +778,129 @@ int main() {
 不用每次都从头计算每个区间，而是通过维护一个滑动窗口 [L, R]，只对变化部分进行加删操作！
 
 
+
+#### 区间不同数字个数
+```c++
+// 问题：给定一个数组 a[1..n] 和 m 次查询，每次查询区间 [l, r] 中不同数字的个数
+
+struct Query {
+    int l, r, id;
+};
+
+struct Mo {
+    int n;                    // 数组大小
+    int block;                // 块大小
+    vector<int> a;            // 原数组
+    vector<Query> qs;         // 查询
+    vector<int> cnt, ans;     // 计数数组与答案 cnt记录当前统计范围 元素值 的个数
+    int distinct = 0;         // 当前答案
+
+    Mo(int n, const vector<int>& arr, int maxA)
+        : n(n), a(arr) {
+        block = sqrt(n); // 平方分块
+        cnt.assign(maxA + 1, 0);
+    }
+
+    void addQuery(int l, int r, int id) {
+        qs.push_back({l, r, id});
+    }
+
+    // 添加一个元素
+    inline void add(int x) {
+        if (cnt[x]++ == 0) distinct++; 
+    }
+
+    // 删除一个元素
+    inline void remove(int x) {
+        if (--cnt[x] == 0) distinct--;
+    }
+
+    vector<int> run() {
+        int m = qs.size();
+        ans.assign(m, 0);
+
+        sort(qs.begin(), qs.end(), [&](const Query& A, const Query& B) {
+            int blockA = A.l / block;
+            int blockB = B.l / block;
+            if (blockA != blockB) return blockA < blockB;
+            return (blockA & 1) ? (A.r < B.r) : (A.r > B.r); // 奇偶优化
+        });
+
+        int L = 1, R = 0; // 当前统计范围
+
+        for (auto& q : qs) {
+            while (L > q.l) add(a[--L]);
+            while (R < q.r) add(a[++R]);
+            while (L < q.l) remove(a[L++]);
+            while (R > q.r) remove(a[R--]);
+
+            ans[q.id] = distinct;
+        }
+
+        return ans;
+    }
+};
+
+
+vector<int> a(n + 1);
+int maxA = 0;
+for (int i = 1; i <= n; ++i) {
+    cin >> a[i];
+    maxA = max(maxA, a[i]);
+}
+Mo mo(n, a, maxA);
+for (int i = 0; i < m; ++i) {
+    int l, r;
+    cin >> l >> r;
+    mo.addQuery(l, r, i);
+}
+auto ans = mo.run();
+```
+
+
+
+
 ### 偏序
 
+统计 x' ≤ x 的个数
 
 #### 一维偏序
 ```c++
-// 问题：求前缀中小于当前数的个数
+// 问题：给你一个长度为 n 的数组 a[1..n]，你需要对每个位置 i 统计满足某个条件的前缀/后缀信息，比如：有多少个 j < i，使得 a[j] < a[i]
 
-const int N = 1e5 + 10;
-// a[x] 原数组
-// c[x] 树状数组计数器，用于动态求前缀和（求比a[i]值小的）
-int a[N], c[N], res[N];
-int n;
+cin >> n;
+for (int i = 1; i <= n; ++i) cin >> a[i];
 
-int lowbit(int x) { return x & -x; }
+// ---- 离散化 ----
+vector<int> nums(a + 1, a + n + 1);
+sort(nums.begin(), nums.end());
+nums.erase(unique(nums.begin(), nums.end()), nums.end());
 
-void add(int x, int v) {
-    while (x < N) c[x] += v, x += lowbit(x);
-}
+for (int i = 1; i <= n; ++i)
+    a[i] = lower_bound(nums.begin(), nums.end(), a[i]) - nums.begin() + 1;
 
-int query(int x) {
-    int res = 0;
-    while (x > 0) res += c[x], x -= lowbit(x);
-    return res;
-}
+int M = nums.size();  // 离散化后的最大值
 
-int main() {
-    cin >> n;
-    for (int i = 1; i <= n; ++i) cin >> a[i];
+// ---- 使用封装好的 BIT ----
+BIT bit(M);
 
-    // 离散化，避免树状数组无法存储
-    vector<int> nums(a + 1, a + n + 1);
-    sort(nums.begin(), nums.end());
-    nums.erase(unique(nums.begin(), nums.end()), nums.end());
-    for (int i = 1; i <= n; ++i)
-        a[i] = lower_bound(nums.begin(), nums.end(), a[i]) - nums.begin() + 1;
-
-    // 树状数组统计
-    for (int i = 1; i <= n; ++i) {
-        res[i] = query(a[i] - 1);  // 查询有多少比当前小
-        add(a[i], 1);              // 加入当前值
-    }
-
-    for (int i = 1; i <= n; ++i)
-        cout << res[i] << " ";
-    cout << "\n";
+for (int i = 1; i <= n; ++i) {
+    // 查询比当前数小的数量 = sum[1 .. a[i]-1]
+    resArr[i] = bit.query(a[i] - 1);
+    // 加入当前数
+    bit.add(a[i], 1);
 }
 ```
 
 离散化 + 树状数组
 
 
-问题：给你一个长度为 n 的数组 a[1..n]，你需要对每个位置 i 统计满足某个条件的前缀/后缀信息，比如：
-- 有多少个 j < i，使得 a[j] < a[i]
+
 
 #### 二维偏序
 ```c++
 // 题目： 给定 n 个点 (x, y)，求对于每个点，有多少个点 (x', y') 满足：x' ≤ x 且 y' ≤ y —— 即它的左下角有多少点
+
 struct Point {
     int x, y, id;
     bool operator<(const Point &p) const {
@@ -751,42 +910,35 @@ struct Point {
 };
 
 const int N = 1e5 + 10;
-int bit[N], ans[N], n;
 Point a[N];
-
-int lowbit(int x) { return x & -x; }
-
-void add(int x, int v) {
-    while (x < N) bit[x] += v, x += lowbit(x);
-}
-
-int query(int x) {
-    int res = 0;
-    while (x > 0) res += bit[x], x -= lowbit(x);
-    return res;
-}
+int ans[N];
 
 int main() {
+    int n;
     cin >> n;
     for (int i = 1; i <= n; ++i) {
         cin >> a[i].x >> a[i].y;
         a[i].id = i;
     }
 
-    // 离散化 y，保证数组数组可以存储y的值
+    // 离散化 y
     vector<int> ys;
+    ys.reserve(n);
     for (int i = 1; i <= n; ++i) ys.push_back(a[i].y);
     sort(ys.begin(), ys.end());
     ys.erase(unique(ys.begin(), ys.end()), ys.end());
     for (int i = 1; i <= n; ++i)
         a[i].y = lower_bound(ys.begin(), ys.end(), a[i].y) - ys.begin() + 1;
 
-    // 排序 + 树状数组
-    // 排序后保证了x的升序，接下来只需要对y进行统计即可
+    // 排序：按 x，再按 y
     sort(a + 1, a + n + 1);
+
+    BIT bit(ys.size() + 2);
+
+    // 根据 x 从小到大统计 y
     for (int i = 1; i <= n; ++i) {
-        ans[a[i].id] = query(a[i].y);
-        add(a[i].y, 1);
+        ans[a[i].id] = bit.query(a[i].y);
+        bit.add(a[i].y, 1);
     }
 
     for (int i = 1; i <= n; ++i)
@@ -817,8 +969,12 @@ int main() {
 
 
 
+### 栈
+#### 单调栈
 
-### 单调栈
+
+
+##### 前一个更小的元素
 ```c++
 // 找每个元素左边第一个比它小的数
 vector<int> a;  // 输入数组
@@ -846,7 +1002,12 @@ for (int i = 0; i < a.size(); ++i) {
 
 
 
-### 单调队列
+### 队列
+
+#### 单调队列
+
+
+##### 滑动窗口最大值
 ```c++
 // 滑动窗口最大值（递减队列）
 vector<int> maxSlidingWindow(vector<int>& nums, int k) {
@@ -875,35 +1036,67 @@ vector<int> maxSlidingWindow(vector<int>& nums, int k) {
 
 
 ### 并查集
+
+
+
+
+
+#### 普通并查集
 ```c++
-/**
-    朴素并查集
-*/ 
-// p[]存储每个点的祖宗节点，s[]只有祖宗节点的有意义，表示祖宗节点所在集合中的点的数量
-int p[N], s[N];
+class UnionFind {
+private:
+    int n;                    // 元素数量
+    std::vector<int> parent; // parent[i] = i 的父节点
+    std::vector<int> size;   // size[i] = i 为根节点的集合大小
 
-// 返回x的祖宗节点
-int find(int x) {
-    if (p[x] != x) p[x] = find(p[x]);
-    return p[x];
-}
+public:
+    // 构造：初始化 1~n
+    UnionFind(int n) : n(n), parent(n + 1), size(n + 1, 1) {
+        for (int i = 1; i <= n; ++i)
+            parent[i] = i;
+    }
 
-// 判断是否在同一个集合
-bool same(int x, int y) {
-    return find(x) == find(y);
-} 
+    // 重置
+    void reset() {
+        for (int i = 1; i <= n; ++i) {
+            parent[i] = i;
+            size[i] = 1;
+        }
+    }
 
-// 集合合并
-void merge(int x, int y) {
-    p[find(x)] = find(y);
-    s[p[y]] += s[p[x]];
-}
+    // 找祖先（路径压缩）
+    int find(int x) {
+        assert(x >= 1 && x <= n);
+        if (parent[x] != x)
+            parent[x] = find(parent[x]);
+        return parent[x];
+    }
 
-// 初始化并查集，编号 1~n
-for (int i = 1; i <= n; i++) {
-    p[i] = i;
-    s[i] = 1;
-}
+    // 判断是否同一集合
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+
+    // 合并（按大小/秩优化）
+    bool merge(int x, int y) {
+        int rx = find(x);
+        int ry = find(y);
+        if (rx == ry) return false;
+
+        // 小的挂大的（按 size 优化）
+        if (size[rx] < size[ry])
+            std::swap(rx, ry);
+
+        parent[ry] = rx;
+        size[rx] += size[ry];
+        return true;
+    }
+
+    // 查询集合大小
+    int getSize(int x) {
+        return size[find(x)];
+    }
+};
 ```
 
 目标：
@@ -919,27 +1112,69 @@ for (int i = 1; i <= n; i++) {
 
 
 ### ST表
+
+
+    
+#### 区间最值
 ```c++
-// 计算1~n的log2值
-for (int i = 2; i <= n; ++i)
-    Log2[i] = Log2[i / 2] + 1;
+struct SparseTable {
+    int n;                           // 元素数量
+    int K;                           // 最大 log
+    vector<int> log2v;               // 预处理 log2
+    vector<vector<int>> st;          // ST 数组
 
-// f[a][b]，a存储位置索引(1~n)，b存储2进制长度，f[a][b]存储a~a+2^b-1范围的最值
-int f[MAXN][21]; // 第二维的大小根据数据范围决定，不小于log(MAXN)
-for (int i = 1; i <= n; ++i)
-    f[i][0] = read(); // 读入数据
-for (int i = 1; i <= 20; ++i)
-    for (int j = 1; j + (1 << i) - 1 <= n; ++j)
-        f[j][i] = max(f[j][i - 1], f[j + (1 << (i - 1))][i - 1]);
+    //   可自定义的区间合并函数（默认 max）
+    static int mergeFunc(int a, int b) {
+        return max(a, b);
+    }
 
-// 初始化、计算
-for (int i = 0; i < n; ++i) {
-    int l = read(), r = read();
-    // 区间长度所对应的log2值(不超过长度)
-    int s = Log2[r - l + 1];
-    // 查询、左右边界2进制长度查询
-    printf("%d\n", max(f[l][s], f[r - (1 << s) + 1][s]));
-}
+    //  构造函数：接收 vector<int>
+    SparseTable(const vector<int> &arr) {
+        build(arr);
+    }
+
+    //  构造函数：接收 C 数组
+    SparseTable(int a[], int n) {
+        vector<int> arr(a + 1, a + n + 1); // 下标 1-based
+        build(arr);
+    }
+
+    //  预处理构建 ST 表
+    void build(const vector<int> &arr) {
+        n = arr.size() - 0;              // arr 必须从 0 或 1 开始都可以
+        
+        log2v.resize(n + 1);
+        for (int i = 2; i <= n; ++i)
+            log2v[i] = log2v[i / 2] + 1;
+        
+        K = log2v[n] + 1;
+        st.assign(K, std::vector<int>(n + 1));
+
+        // 0 次方：区间长度为 1
+        for (int i = 1; i <= n; ++i)
+            st[0][i] = arr[i - 1];   // 若 arr 是 1-based 自行改为 arr[i]
+
+        // DP 构造 ST
+        for (int k = 1; k < K; ++k) {
+            for (int i = 1; i + (1 << k) - 1 <= n; ++i) {
+                st[k][i] = mergeFunc(
+                    st[k - 1][i],
+                    st[k - 1][i + (1 << (k - 1))]
+                );
+            }
+        }
+    }
+
+    // 查询 [l, r] 区间最大值
+    // O(1)
+    int query(int l, int r) const {
+        int k = log2v[r - l + 1];
+        return mergeFunc(
+            st[k][l],
+            st[k][r - (1 << k) + 1]
+        );
+    }
+};
 ```
 
 ST 表（Sparse Table，稀疏表）是用于解决 可重复贡献问题 的数据结构
@@ -958,127 +1193,192 @@ ST 表（Sparse Table，稀疏表）是用于解决 可重复贡献问题 的数
 
 
 ### 树状数组
+
+
+![树状数组结构](.assets/树状数组结构.png)
+
+
+#### 单点修改 区间求和
 ```c++
-// 编号1~n
-int[N] tree;
+class BIT {
+private:
+    int n;
+    std::vector<long long> tree;
 
-// 二进制末尾1
-int lowbit(int x) {
-    return x & (-x);
-}
-
-// 当前更新，更新父节点链，保证树上父节点链上的值为前缀和值
-void update(int i, int v) {
-    while (i <= n) {
-        tree[i] += v;
-        i += lowbit(i);
+    static int lowbit(int x) {
+        return x & -x;
     }
-}
 
-// 区间查询，二进制1统计
-int query(int i) {
-    int sum = 0;
-    while (i > 0) {
-        sum += tree[i];
-        i -= lowbit(i);
+public:
+    // 构造：给定大小 n，初始为 0
+    BIT(int n) : n(n), tree(n + 1, 0) {}
+
+    // 构造：从数组直接建树 O(n)
+    BIT(const std::vector<long long> &a) : n(a.size()), tree(a.size() + 1, 0) {
+        for (int i = 1; i <= n; ++i) {
+            tree[i] += a[i - 1];
+            int j = i + lowbit(i);
+            if (j <= n) tree[j] += tree[i];
+        }
     }
-    return sum;
-}
+
+    // 单点增加：a[x] += v
+    void add(int x, long long v) {
+        assert(x >= 1 && x <= n);
+        while (x <= n) {
+            tree[x] += v;
+            x += lowbit(x);
+        }
+    }
+
+    // 单点修改：a[x] = v（需要先查当前值）
+    void update(int x, long long v) {
+        long long old = queryRange(x, x);
+        add(x, v - old);
+    }
+
+    // 查询前缀和：sum(1..x)
+    long long query(int x) const {
+        assert(x >= 0 && x <= n);
+        long long res = 0;
+        while (x > 0) {
+            res += tree[x];
+            x -= lowbit(x);
+        }
+        return res;
+    }
+
+    // 查询区间和 [l, r]
+    long long queryRange(int l, int r) const {
+        assert(l <= r);
+        return query(r) - query(l - 1);
+    }
+};
+
+vector<long long> a = {1, 2, 3, 4, 5};
+BIT bit(a);  // 直接从数组构造
+cout << bit.queryRange(2, 4) << "\n"; // 2+3+4 = 9
+bit.add(3, 10); // a[3] += 10 → 3 -> 13
+cout << bit.queryRange(1, 5) << "\n"; // 1+2+13+4+5 = 25
+bit.update(5, 100); // a[5] = 100
+
 ```
-
-目标：
-1.单点更新
-2.区间查询
-
 
 前缀和
 基于二进制位为1的前缀和统计
 每个节点的编号加上二进制位的末尾(右侧)1，就可以得到父节点的编号(反过来同理获取子节点)
 
 
-![树状数组结构](.assets/树状数组结构.png)
+
 
 
 ### 线段树
+
+
+
+#### 区间修改 区间求和
 ```c++
-// 线段树要开N的4倍空间
-struct node {
-    int l, r;
-    // sum区间和、lazy子树区间更新延迟标记
-    long long sum, lazy; 
-} tree[N * 4];
+class SegTree {
+private:
+    struct Node {
+        ll sum = 0;     // 区间和
+        ll lazy = 0;    // lazy：整段区间需要加的值
+    };
 
-// 原始数据
-int w[N];
+    int n;                     // 区间大小
+    vector<Node> tr;           // 线段树（4n 空间）
 
-// 向上更新父节点
-void pushup(int p) {
-    tree[p].sum = tree[p << 1].sum + tree[p << 1 | 1].sum;
-}
-
-// 向下更新子树，清空当前节点的lazy标记
-void pushdown(int p) {
-    node l = tree[p << 1];
-    node r = tree[p << 1 | 1];
-    if (tree[p].lazy) {
-        l.lazy += tree[p].lazy;
-        r.lazy += tree[p].lazy;
-        l.sum += (long long)(l.r - l.l + 1) * tree[p].lazy;
-        r.sum += (long long)(r.r - r.l + 1) * tree[p].lazy;
-        tree[p].lazy = 0;
+    // PushUp: 更新父节点
+    inline void pushup(int p) {
+        tr[p].sum = tr[p<<1].sum + tr[p<<1|1].sum;
     }
-}
 
-// 区间[1~n]，p当前节点、l当前节点左边界、r当前节点右边界
-void build(int p, int l, int r) {
-    tree[p].l = l;
-    tree[p].r = r;
-    tree[p].lazy = 0;
-    if (l == r) {
-        tree[p].sum = w[p];
-        return;
+    // PushDown: 下传 lazy
+    inline void pushdown(int p, int l, int r) {
+        ll tag = tr[p].lazy;
+        if (tag == 0) return;
+
+        int mid = (l+r) >> 1;
+
+        // 左子
+        tr[p<<1].lazy += tag;
+        tr[p<<1].sum  += tag * (mid - l + 1);
+
+        // 右子
+        tr[p<<1|1].lazy += tag;
+        tr[p<<1|1].sum  += tag * (r - mid);
+
+        tr[p].lazy = 0;
     }
-    int mid = (l + r) >> 1;
-    build(p << 1, l, mid);
-    build(p << 1 | 1, mid + 1, r);
-    // 向上更新父节点
-    pushup(p);
-}
 
-// 区间更新、p当前节点、l更新左边界(不变)、r更新右边界(不变)，v更新值
-void update(int p, int l, int r, int v) {
-    // 完全覆盖当前节点
-    if (tree[p].l >= l && tree[p].r <= r) {
-        tree[p].sum += (long long)(tree[p].r - tree[p].l + 1) * v;
-        tree[p].lazy += v;
-        return;
+    // 建树：build(1,1,n)
+    void build(int p, int l, int r, const vector<ll>& a) {
+        if (l == r) {
+            tr[p].sum = a[l];
+            return;
+        }
+        int mid = (l+r)>>1;
+        build(p<<1, l, mid, a);
+        build(p<<1|1, mid+1, r, a);
+        pushup(p);
     }
-    pushdown(p);
-    int mid = (tree[p].l + tree[p].r) >> 1;
-    // 左节点重叠
-    if (l <= mid) update(p << 1, l, r);
-    // 右节点重叠
-    if (r > mid) update(p << 1 | 1, l, r);
-    pushup(p);
-}
 
-// 区间查询、p当前节点、l查询左边界(不变)、r查询右边界(不变)
-long long query(int p, int l, int r){
-    // 完全覆盖当前节点，更新过程中能保证父节点lazy被清除了
-    if (tree[p].l >= l && tree[p].r <= r) return tree[p].sum;
-    // 向下更新lazy
-    pushdown(p);
-    int mid = (tree[p].l + tree[p].r) >> 1;
-    long long sum = 0;
-    // 左节点重叠
-    if (l <= mid) sum += query(p << 1, l, r);
-    // 右节点重叠
-    if (r > mid) sum += query(p << 1 | 1, l, r);
-    return sum;
-}
+    // 区间加 update(1,1,n,L,R,val)
+    void update(int p, int l, int r, int L, int R, ll val) {
+        if (L <= l && r <= R) {
+            tr[p].sum += val * (r - l + 1);
+            tr[p].lazy += val;
+            return;
+        }
+        pushdown(p, l, r);
+        int mid = (l+r)>>1;
+        if (L <= mid) update(p<<1, l, mid, L, R, val);
+        if (R >  mid) update(p<<1|1, mid+1, r, L, R, val);
+        pushup(p);
+    }
 
-// 初始化
-build(1, 1, n);
+    // 区间查询 query(1,1,n,L,R)
+    ll query(int p, int l, int r, int L, int R) {
+        if (L <= l && r <= R) return tr[p].sum;
+
+        pushdown(p, l, r);
+        int mid = (l+r)>>1;
+
+        ll res = 0;
+        if (L <= mid) res += query(p<<1, l, mid, L, R);
+        if (R >  mid) res += query(p<<1|1, mid+1, r, L, R);
+        return res;
+    }
+
+public:
+
+    // 仅指定大小，默认全 0
+    SegTree(int n) : n(n) {
+        tr.assign(4*n + 5, Node());
+    }
+
+    // 直接从数组构建（数组须下标从 1 开始）
+    SegTree(const vector<ll>& a) {
+        n = (int)a.size() - 1;  // 要求 a[1..n]
+        tr.assign(4*n + 5, Node());
+        build(1, 1, n, a);
+    }
+
+    // 对区间 [L,R] 每个元素 += val
+    void rangeAdd(int L, int R, ll val) {
+        update(1, 1, n, L, R, val);
+    }
+
+    // 查询区间 [L,R] 的和
+    ll rangeQuery(int L, int R) {
+        return query(1, 1, n, L, R);
+    }
+};
+
+vector<long long> a = {0, 1, 2, 3, 4, 5}; // 下标从1开始
+SegTree st(a);
+st.rangeAdd(2, 4, 10);  // a[2..4] 每个 +10
+cout << st.rangeQuery(1, 5) << endl;  // 输出区间和
 ```
 
 目标：
@@ -1096,128 +1396,195 @@ build(1, 1, n);
 ## 三、字符串
 
 
-### 哈希Hash
-```c++
-// 一维字符串hash
-const int M=233;//是我们自己选择的进制数，一般可以选233,2333,10007等质数
-const int mod=1e9+7;//一般选一个比较大的质数
-long long get(string s)//获取字符串对应的哈希值
-{
-	long long sum=0;
-	for(int i=0;i<s.size();i++) sum=(sum*M+s[i]-'a')%mod;
-	return sum;
-}
+### 字符串哈希Hash
 
-// 一维hash，使用unsigned long long 溢出
-typedef unsigned long long int ull;
-const int N=1e5+10;
-const int M=233;
-ull h[N],base[N]; // h[i]记录1~i的前缀hash，// base[i]=M^i
-ull query(int l,int r)//获取字符串[l,r]的哈希值
-{
-    return h[r]-h[l-1]*base[r-l+1];
-}
-//初始化哈希，1~n
-void init(string s)
-{
-    int n=s.size();
-    s="0"+s;//让其下标从1开始
-    base[0]=1;
-    for(int i=1;i<=n;i++)
-    {
-        h[i]=h[i-1]*M+s[i];
-        base[i]=base[i-1]*M;
-    }
-}
-//求[l1,r1],[l2,r2]子串并的哈希值
-ull merge(int l1, int r1, int l2, int r2)
-{
-    return query(l1, r1) * base[r2 - l2 + 1] + query(l2, r2);
-}
 
-// 二维矩阵hash
-typedef long long int ll;
-const int N=1010;
-ll h[N][N],base1[N],base2[N];
-int a[N][N],n,m;
-//构建，先构建行前缀hash（左到右，base1）,在依靠行前缀hash构造列矩阵hash（上到下）
-void init()
-{
-    base1[0]=base2[0]=1;
-    for(int i=1;i<N;i++)
-    {
-        base1[i]=base1[i-1]*131;
-        base2[i]=base2[i-1]*233;
+
+#### 一维滚动Hash
+```cpp
+class StringHash1D {
+private:
+    ull base;
+    vector<ull> h, p;   // 前缀哈希、幂次数
+    int n = 0;
+
+public:
+    // 构造（默认 base = 131）
+    StringHash1D(const string &s = "", ull base = 131) : base(base) {
+        if (!s.empty()) init(s);
     }
-    for(int i=1;i<=n;i++)
-        for(int j=1;j<=m;j++)
-            h[i][j]=h[i][j-1]*131+a[i][j];//行哈希
-    for(int i=1;i<=n;i++)
-        for(int j=1;j<=m;j++)
-            h[i][j]=h[i-1][j]*233+h[i][j];//列哈希
-}
-//查询矩阵的哈希值，最前面的最大，需要补充由于长度导致前面少乘的幂运算
-ll query(int x1,int y1,int x2,int y2)//查询矩阵的哈希值
-{
-    return h[x2][y2]-h[x2][y1-1]*base1[y2-y1+1]-h[x1-1][y2]*base2[x2-x1+1]
-    +h[x1-1][y1-1]*base1[y2-y1+1]*base2[x2-x1 + 1];
-}
+
+    void init(const string &s) {
+        n = s.size();
+        h.assign(n + 1, 0);
+        p.assign(n + 1, 0);
+        p[0] = 1;
+
+        for (int i = 1; i <= n; ++i) {
+            h[i] = h[i - 1] * base + (unsigned char)s[i - 1];
+            p[i] = p[i - 1] * base;
+        }
+    }
+
+    // 查询区间 [l, r]（1-index）
+    ull query(int l, int r) const {
+        return h[r] - h[l - 1] * p[r - l + 1];
+    }
+
+    // 合并两个子串的哈希 (A followed by B)
+    ull merge(ull h1, int len2, ull h2) const {
+        return h1 * p[len2] + h2;
+    }
+};
+
+string s = "abacaba";
+StringHash1D H(s);
+
+cout << H.query(1, 3) << "\n"; // "aba"
+cout << H.query(4, 7) << "\n"; // "caba"
 ```
 
-把一个东西转换成一个大整数，这样比较两个东西是否相等的就只要比较两个整数是否相等就行了
+
+
+#### 二维滚动Hash
+```cpp
+class MatrixHash2D {
+private:
+    int n, m;
+    ull base1, base2;
+    vector<vector<ull>> h;      // h[i][j]
+    vector<ull> p1, p2;         // base1^k, base2^k
+
+public:
+    // 构造：传入矩阵与两种底数
+    MatrixHash2D(const vector<vector<int>> &a,
+                 ull base1 = 131, ull base2 = 233)
+        : base1(base1), base2(base2)
+    {
+        init(a);
+    }
+
+    void init(const vector<vector<int>> &a) {
+        n = a.size();
+        m = a[0].size();
+
+        h.assign(n + 1, vector<ull>(m + 1, 0));
+        p1.assign(m + 1, 0);
+        p2.assign(n + 1, 0);
+
+        p1[0] = p2[0] = 1;
+        for (int i = 1; i <= m; ++i) p1[i] = p1[i - 1] * base1;
+        for (int i = 1; i <= n; ++i) p2[i] = p2[i - 1] * base2;
+
+        // 行 → 列 两次前缀哈希
+        for (int i = 1; i <= n; ++i)
+            for (int j = 1; j <= m; ++j)
+                h[i][j] = h[i][j - 1] * base1 + a[i - 1][j - 1];
+
+        for (int i = 1; i <= n; ++i)
+            for (int j = 1; j <= m; ++j)
+                h[i][j] = h[i - 1][j] * base2 + h[i][j];
+    }
+
+    // 查询子矩阵 hash ([x1,y1] ~ [x2,y2]，1-index)
+    ull query(int x1, int y1, int x2, int y2) const {
+        ull A = h[x2][y2];
+        ull B = h[x2][y1 - 1] * p1[y2 - y1 + 1];
+        ull C = h[x1 - 1][y2] * p2[x2 - x1 + 1];
+        ull D = h[x1 - 1][y1 - 1] * p1[y2 - y1 + 1] * p2[x2 - x1 + 1];
+        return A - B - C + D;
+    }
+};
+
+vector<vector<int>> a = {
+    {1,2,3},
+    {4,5,6},
+    {7,8,9}
+};
+MatrixHash2D H(a);
+// 查询子矩阵 (1,1)~(2,2)
+cout << H.query(1,1,2,2) << "\n";
+```
 
 ![二维hash原理](.assets/二维hash原理.png)
+把一个东西转换成一个大整数，这样比较两个东西是否相等的就只要比较两个整数是否相等就行了
 
 
 ### 字典树
+
+
+#### 普通字典树
 ```c++
-const int ALPHABET_SIZE = 26; // 字母表大小，26 表示只处理小写英文字母
-const int N = 1e5 + 10;        // 结点数上限（可以按题目规模调）
+class Trie {
+private:
+    static const int A = 26;               // 字母表大小：小写英文
+    vector<array<int, A>> ch;              // 儿子节点
+    vector<int> cntEnd;                    // cntEnd[u]：以此节点结尾的单词数量
+    vector<int> cntPass;                   // cntPass[u]：经过此节点的单词数量（用于前缀统计）
 
-struct Trie {
-    int ch[N][ALPHABET_SIZE]; // ch[x][c] 表示节点 x 的第 c 个儿子
-    int cnt[N];               // cnt[x] 表示以该点为结尾的字符串数量
-    int tot = 1;              // 总节点数（0 是根节点）
-
-    void insert(const string &s) {
-        int u = 0; // 从根开始
-        for (char c : s) {
-            int c_idx = c - 'a';
-            if (!ch[u][c_idx]) ch[u][c_idx] = tot++;
-            u = ch[u][c_idx];
-        }
-        cnt[u]++; // 最后一个点标记字符串结尾
+public:
+    Trie() {
+        ch.push_back(array<int, A>{});     // root 节点 id = 0
+        cntEnd.push_back(0);
+        cntPass.push_back(0);
     }
 
-    bool search(const string &s) {
+    // 插入字符串
+    void insert(const string &s) {
         int u = 0;
         for (char c : s) {
-            int c_idx = c - 'a';
-            if (!ch[u][c_idx]) return false;
-            u = ch[u][c_idx];
+            int id = c - 'a';
+            if (ch[u][id] == 0) {
+                ch[u][id] = ch.size();
+                ch.push_back(array<int, A>{});
+                cntEnd.push_back(0);
+                cntPass.push_back(0);
+            }
+            u = ch[u][id];
+            cntPass[u]++;   // 经过 u
         }
-        return cnt[u] > 0; // 只有插入过的字符串才算匹配成功
+        cntEnd[u]++;        // 在此结尾
     }
 
-    int countPrefix(const string &prefix) {
+    // 是否存在完整字符串 s
+    bool search(const string &s) const {
+        int u = 0;
+        for (char c : s) {
+            int id = c - 'a';
+            if (ch[u][id] == 0) return false;
+            u = ch[u][id];
+        }
+        return cntEnd[u] > 0;
+    }
+
+    // 统计以 prefix 为前缀的字符串总数量（含重复字符串）
+    int countPrefix(const string &prefix) const {
         int u = 0;
         for (char c : prefix) {
-            int c_idx = c - 'a';
-            if (!ch[u][c_idx]) return 0;
-            u = ch[u][c_idx];
+            int id = c - 'a';
+            if (ch[u][id] == 0) return 0;
+            u = ch[u][id];
         }
-
-        return dfs_count(u);
+        return cntPass[u];
     }
 
-    int dfs_count(int u) {
-        int res = cnt[u];
-        for (int i = 0; i < ALPHABET_SIZE; i++) {
-            if (ch[u][i]) {
-                res += dfs_count(ch[u][i]);
+    // DFS统计整个子树的单词数量（包含重复字符串）
+    int countSubtree(int u) const {
+        int ans = cntEnd[u];
+        stack<int> st;
+        st.push(u);
+
+        while (!st.empty()) {
+            int x = st.top(); st.pop();
+            for (int i = 0; i < A; i++) {
+                int v = ch[x][i];
+                if (v) {
+                    ans += cntEnd[v];
+                    st.push(v);
+                }
             }
         }
-        return res;
+        return ans;
     }
 };
 ```
@@ -2017,13 +2384,6 @@ int lca(int u, int v) {
 
 
 ### 树链剖分
-
-树链剖分（Heavy-Light Decomposition，简称 HLD）是树上路径查询/修改类题的王炸算法，尤其在支持路径上快速查询、修改、赋值的时候非常高效
-
-将一棵树剖成若干条“重链”和“轻边”，使得：
-    - 每条重链内的节点在 DFS 序中是连续的；
-    - 在链上用线段树/树状数组维护；
-    - 任意一条路径最多跳 O(log n) 次
 ```c++
 const int N = 1e5 + 10;
 
@@ -2131,6 +2491,13 @@ dfs2(1, 1);
 seg.build(1, 1, n);
 ```
 
+树链剖分（Heavy-Light Decomposition，简称 HLD）是树上路径查询/修改类题的王炸算法，尤其在支持路径上快速查询、修改、赋值的时候非常高效
+
+将一棵树剖成若干条“重链”和“轻边”，使得：
+    - 每条重链内的节点在 DFS 序中是连续的；
+    - 在链上用线段树/树状数组维护；
+    - 任意一条路径最多跳 O(log n) 次
+
 重链：每个节点往“子树最大的儿子”连出的边叫重边，连起来就是重链；
 轻链：剩下的那些儿子连接的边叫轻边，连起来是轻链。
 
@@ -2141,7 +2508,6 @@ seg.build(1, 1, n);
 
 
 ## 六、数学
-
 
 ### 数论
 
