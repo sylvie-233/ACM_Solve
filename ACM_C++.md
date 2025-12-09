@@ -10,6 +10,7 @@
 基础环境初始化配置：
 ```cpp
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <format>
 #include <string>
@@ -20,7 +21,11 @@ using ull = unsigned long long;
 // 内置工具使用使用
 using std::string;
 
-
+// 输入优化
+std::ios::sync_with_stdio(false);
+std::cin.tie(nullptr);
+std::ifstream fin("in.txt");
+std::istream &in = fin.is_open() ? fin : std::cin;
 ```
 
 
@@ -367,6 +372,12 @@ Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 ### 枚举
 
 
+#### 尺取
+
+
+#### 双指针
+
+
 
 ### 离散化
 ```c++
@@ -455,8 +466,6 @@ void bfs(int start) {
 宽度优先搜索（依赖队列先进先出特性）
 
 
-
-#### 双指针
 
 
 
@@ -1393,6 +1402,113 @@ cout << st.rangeQuery(1, 5) << endl;  // 输出区间和
 
 
 
+#### 扫描线
+
+##### 面积并
+```c++
+// 给你多个矩形的坐标，统计这些矩形的并集的面积总和
+
+// 边集事件
+struct Event {
+    int x, y1, y2, type; // +1 表示加入（左边），-1 表示删除（右边）
+};
+
+struct SegTree {
+private:
+    struct Node {
+        int cover = 0; // 覆盖次数
+        ll len = 0; // 该区间被覆盖的实际长度
+    };
+    std::vector<Node> tr; // 线段树
+    std::vector<int> Y; // 离散化后y坐标数组
+    int n; // y坐标区间个数
+    
+    // 根据 cover 值更新区间长度（线段数中的l、r为覆盖区间索引）
+    void pushup(int p, int l, int r) {
+        if (tr[p].cover > 0) {
+            tr[p].len = Y[r+1] - Y[l];
+        } else if (l == r) {
+            tr[p].len = 0;
+        } else {
+            tr[p].len = tr[p<<1].len + tr[p<<1|1].len;
+        }
+    }
+
+    void update(int p, int l, int r, int L, int R, int val) {
+        if (R < l || r < L) return;
+        if (L <= l && r <= R) {
+            tr[p].cover += val;
+            pushup(p, l, r);
+            return;
+        }
+        int mid = (l + r) >> 1;
+        update(p<<1, l, mid, L, R, val);
+        update(p<<1|1, mid+1, r, L, R, val);
+        pushup(p, l, r);
+    }
+
+public:
+    SegTree(const std::vector<int>& ys): Y(ys) {
+        n = Y.size() - 1;          // 点数 - 1 = 区间数
+        tr.assign(4*n + 5, Node());
+    }
+
+    void cover(int L, int R, int val) {
+        // 线段树根节点从1开始
+        // 区间索引从0~n-1（二者没有直接关系）
+        update(1, 0, n-1, L, R, val);
+    }
+
+    ll totalLen() {
+        return tr[1].len;
+    }
+};
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<Event> es;
+    std::vector<int> ys;
+    for (int i = 0; i < n; i++) {
+        int x1, y1, x2, y2;
+        std::cin >> x1 >> y1 >> x2 >> y2;
+        es.push_back({x1, y1, y2, 1}); // 加入左边
+        es.push_back({x2, y1, y2, -1}); // 加入右边
+
+        ys.push_back(y1);
+        ys.push_back(y2);
+    }
+
+    std::ranges::sort(ys);
+    ys.erase(std::unique(ys.begin(), ys.end()), ys.end());
+    SegTree seg(ys);
+
+    // x坐标排序
+    std::ranges::sort(es, [](const Event& a, const Event& b) {
+        return a.x < b.x;
+    });
+
+    ll ans = 0;
+    for (int i = 0; i < es.size() - 1; i++) {
+        // R-1 是为了保证 覆盖的区间索引
+        int L = std::lower_bound(ys.begin(), ys.end(), es[i].y1) - ys.begin();
+        int R = std::lower_bound(ys.begin(), ys.end(), es[i].y2) - ys.begin() - 1;
+
+        seg.cover(L, R, es[i].type);
+
+        ans += seg.totalLen() * (es[i + 1].x - es[i].x);
+    }
+    std::cout << ans << std::endl;
+
+    return 0;
+}
+```
+
+扫描线核心：
+- 左边+1、右边-1
+- 二维化一维，x轴排序遍历、y轴按线段树统计总和
+
+
 ## 三、字符串
 
 
@@ -1610,7 +1726,7 @@ public:
 #### LIS 最长上升子序列
 
 最长上升子序列的长度
-f[i]记录以i结尾的最长上升子序列的长度
+`f[i]`记录以i结尾的最长上升子序列的长度
 
 可利用手动维护上升子序列（二分+贪心）优化
 
@@ -1618,11 +1734,8 @@ f[i]记录以i结尾的最长上升子序列的长度
 
 #### LCS 最长公共子序列
 
-f[i][j]记录 a[1~i]和b[1~j]的最长公共子序列
-![LCS状态转移方程](.assets/LCS状态转移方程.png)
+`f[i][j]`记录 `a[1~i]`和`b[1~j]`的最长公共子序列
 
-
-#### 状态DP
 
 
 
