@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <utility>
 #include <cmath>
 #include <cstring>
 #include <cassert>
@@ -253,6 +254,57 @@ namespace Sorting {
             if (!swapped) break; // 提前退出
         }
     }
+}
+
+namespace PrefixSum {
+    class PrefixSum2D {
+    private:
+        int n, m;
+        std::vector<std::vector<ll>> a;   // 原矩阵 (1-based)
+        std::vector<std::vector<ll>> ps;  // 前缀和矩阵 (1-based)
+
+    public:
+        // 构造函数
+        PrefixSum2D(int _n, int _m) : n(_n), m(_m) {
+            a.assign(n + 1, std::vector<ll>(m + 1, 0));
+            ps.assign(n + 1, std::vector<ll>(m + 1, 0));
+        }
+
+        // 从外部矩阵构建（矩阵下标为 1-based；若是 0-based，请先偏移）
+        void initFromMatrix(const std::vector<std::vector<ll>>& mat) {
+            for (int i = 1; i <= n; i++) {
+                for (int j = 1; j <= m; j++) {
+                    a[i][j] = mat[i][j];
+                }
+            }
+        }
+
+        // 单点加入 —— 若你逐个读输入，可直接 add(i,j,val)
+        void add(int x, int y, ll v) {
+            a[x][y] += v;
+        }
+
+        // 构建前缀和（必须在全部 add() 完成后调用一次）
+        void build() {
+            for (int i = 1; i <= n; i++) {
+                ll row_sum = 0;
+                for (int j = 1; j <= m; j++) {
+                    row_sum += a[i][j];
+                    ps[i][j] = ps[i-1][j] + row_sum;
+                }
+            }
+        }
+
+        // 查询 (x1, y1) 到 (x2, y2) 的子矩形和
+        ll query(int x1, int y1, int x2, int y2) {
+            if (x1 > x2) std::swap(x1, x2);
+            if (y1 > y2) std::swap(y1, y2);
+            return ps[x2][y2]
+                - ps[x1-1][y2]
+                - ps[x2][y1-1]
+                + ps[x1-1][y1-1];
+        }
+    };
 }
 
 // 差分库

@@ -1,6 +1,12 @@
 # ACM (1 + 2 + 1 + 2)
 
-``
+`董晓算法 A 基础算法：P28`
+`董晓算法 B 搜索：P`
+`董晓算法 C 数据结构：P`
+`董晓算法 D 图论：P`
+`董晓算法 E 动态规划：P`
+`董晓算法 F 字符串：P`
+`董晓算法 G 数学：P`
 
 ## 一、基础算法
 
@@ -337,7 +343,7 @@ string div(string a, int b, int &r) {
 namespace Sorting {
 
     // 冒泡排序模板函数（默认升序）
-    template <typename T>
+    template<typename T>
     void bubble_sort(T arr[], int n, bool ascending = true) {
         for (int i = 0; i < n - 1; ++i) {
             bool swapped = false;
@@ -348,6 +354,105 @@ namespace Sorting {
                 }
             }
             if (!swapped) break; // 提前退出
+        }
+    }
+
+    // 快速排序
+    template<typename T>
+    int partition(T arr[], int l, int r, bool ascending) {
+        T pivot = arr[r];
+        int i = l - 1;
+        for (int j = l; j < r; ++j) {
+            if (ascending ? arr[j] <= pivot : arr[j] >= pivot) {
+                ++i;
+                std::swap(arr[i], arr[j]);
+            }
+        }
+        std::swap(arr[i + 1], arr[r]);
+        return i + 1;
+    }
+
+    template<typename T>
+    void quick_sort_impl(T arr[], int l, int r, bool ascending) {
+        if (l < r) {
+            int p = partition(arr, l, r, ascending);
+            quick_sort_impl(arr, l, p - 1, ascending);
+            quick_sort_impl(arr, p + 1, r, ascending);
+        }
+    }
+
+    template<typename T>
+    void quick_sort(T arr[], int n, bool ascending = true) {
+        if (n > 1)
+            quick_sort_impl(arr, 0, n - 1, ascending);
+    }
+
+    // 归并排序
+    template<typename T>
+    void merge(T arr[], int l, int m, int r, bool ascending) {
+        int n1 = m - l + 1;
+        int n2 = r - m;
+
+        std::vector<T> L(n1), R(n2);
+        for (int i = 0; i < n1; ++i) L[i] = arr[l + i];
+        for (int i = 0; i < n2; ++i) R[i] = arr[m + 1 + i];
+
+        int i = 0, j = 0, k = l;
+        while (i < n1 && j < n2) {
+            if (ascending ? L[i] <= R[j] : L[i] >= R[j])
+                arr[k++] = L[i++];
+            else
+                arr[k++] = R[j++];
+        }
+
+        while (i < n1) arr[k++] = L[i++];
+        while (j < n2) arr[k++] = R[j++];
+    }
+
+    template<typename T>
+    void merge_sort_impl(T arr[], int l, int r, bool ascending) {
+        if (l >= r) return;
+        int m = l + (r - l) / 2;
+        merge_sort_impl(arr, l, m, ascending);
+        merge_sort_impl(arr, m + 1, r, ascending);
+        merge(arr, l, m, r, ascending);
+    }
+
+    template<typename T>
+    void merge_sort(T arr[], int n, bool ascending = true) {
+        if (n > 1)
+            merge_sort_impl(arr, 0, n - 1, ascending);
+    }
+
+    // 堆排序
+    // 让一个节点 + 它的子树重新满足堆性质
+    template <typename T>
+    void heapify(T arr[], int n, int i, bool ascending) {
+        int extremum = i;
+        int l = 2 * i + 1;
+        int r = 2 * i + 2;
+
+        if (l < n && (ascending ? arr[l] > arr[extremum] : arr[l] < arr[extremum]))
+            extremum = l;
+        if (r < n && (ascending ? arr[r] > arr[extremum] : arr[r] < arr[extremum]))
+            extremum = r;
+
+        if (extremum != i) {
+            std::swap(arr[i], arr[extremum]);
+            heapify(arr, n, extremum, ascending);
+        }
+    }
+
+    template<typename T>
+    void heap_sort(T arr[], int n, bool ascending = true) {
+        // 建堆
+        for (int i = n / 2 - 1; i >= 0; --i)
+            heapify(arr, n, i, ascending);
+
+        // 排序
+        for (int i = n - 1; i > 0; --i) {
+            std::swap(arr[0], arr[i]);
+            heapify(arr, i, 0, ascending);
         }
     }
 
@@ -363,6 +468,32 @@ Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 
 
 #### 冒泡排序
+#### 选择排序
+#### 快速排序
+
+![快速排序](./.assets/快速排序.png)
+二分思想、基于中位点左右分治
+
+##### 第k小的数
+
+![快速排序第k小的数](./.assets/快速排序第k小的数.png)
+基于快速排序中位点的索引判断左边个数是否为第k个
+
+#### 归并排序
+
+![归并排序](./.assets/归并排序.png)
+二分思想、最后合并
+
+##### 逆序对
+
+当归并排序从右侧子序列取元素时统计剩余逆序个数
+
+#### 堆排序
+
+#### 区间合并
+
+左右端点排序
+
 
 ### 模拟
 
@@ -376,6 +507,12 @@ Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 
 
 #### 双指针
+
+区间枚举问题一般都可以交给双指针优化
+
+
+
+#### 倍增
 
 
 
@@ -486,12 +623,89 @@ namespace Searching {
 }
 ```
 
+![二分查找分类](./.assets/二分查找分类.png)
+- 最小化答案、最大化答案
+- 上升区、下降区（自变量x与因变量y的关系）
+
+#### 01分数规划
+
+![01分数规划](./.assets/01分数规划.png)
+物品01选择问题使得结果最大（最小）化（转换游戏规则）
+
 
 #### 三分查找
 
 
+### 前缀和
+
+
+#### 一维前缀和
+
+
+#### 二维前缀和
+```c++
+class PrefixSum2D {
+private:
+    int n, m;
+    vector<vector<ll>> a;   // 原矩阵 (1-based)
+    vector<vector<ll>> ps;  // 前缀和矩阵 (1-based)
+
+public:
+    // 构造函数
+    PrefixSum2D(int _n, int _m) : n(_n), m(_m) {
+        a.assign(n + 1, vector<ll>(m + 1, 0));
+        ps.assign(n + 1, vector<ll>(m + 1, 0));
+    }
+
+    // 从外部矩阵构建（矩阵下标为 1-based；若是 0-based，请先偏移）
+    void initFromMatrix(const vector<vector<ll>>& mat) {
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= m; j++) {
+                a[i][j] = mat[i][j];
+            }
+        }
+    }
+
+    // 单点加入 —— 若你逐个读输入，可直接 add(i,j,val)
+    void add(int x, int y, ll v) {
+        a[x][y] += v;
+    }
+
+    // 构建前缀和（必须在全部 add() 完成后调用一次）
+    void build() {
+        for (int i = 1; i <= n; i++) {
+            ll row_sum = 0;
+            for (int j = 1; j <= m; j++) {
+                row_sum += a[i][j];
+                ps[i][j] = ps[i-1][j] + row_sum;
+            }
+        }
+    }
+
+    // 查询 (x1, y1) 到 (x2, y2) 的子矩形和
+    ll query(int x1, int y1, int x2, int y2) {
+        if (x1 > x2) swap(x1, x2);
+        if (y1 > y2) swap(y1, y2);
+        return ps[x2][y2]
+             - ps[x1-1][y2]
+             - ps[x2][y1-1]
+             + ps[x1-1][y1-1];
+    }
+};
+```
+
+
+#### 树上前缀和
+
+![树上前缀和](./.assets/树上前缀和.png)
+
+多次查询树上一些路径的权值和、考虑使用树上前缀和（区分点前缀和、边前缀和）
+与LCA相关、依赖根节点到子节点的路径权值和
+
 
 ### 差分
+
+![差分](./.assets/差分.png)
 
 差分 是一个非常实用又简单的技巧，特别适合处理：
 - 区间加
@@ -499,6 +713,8 @@ namespace Searching {
 - 快速构造前缀变化
 - 离线处理区间操作
 
+差分和前缀和是一对互逆运算
+差分核心思想：区间操作转换为两点操作、利用前缀和还原数组
 
 #### 一维差分
 
@@ -632,6 +848,11 @@ auto res = diff.build();
 ![二维差分原理](.assets/二维差分原理.png)
 
 
+#### 树上差分
+
+![树上差分](.assets/树上差分.png)
+多次对树上一些路径做加法操作、然后查询某个点、某条边在操作之后的值，考虑使用树上差分（区分点差分、边差分）
+通过子树和还原
 
 ### 分块
 
@@ -1042,6 +1263,22 @@ vector<int> maxSlidingWindow(vector<int>& nums, int k) {
 
 - 滑动窗口最值
 
+
+### 堆
+
+堆本质是一颗完全二叉树
+
+#### 对顶堆
+
+
+##### 第k大的数
+
+![对顶堆第k大的数](.assets/对顶堆第k大的数.png)
+一个小根堆和一个大根堆对接（类似漏斗），保证小根堆的所有元素大于等于大根堆的元素，并且维持小根堆元素的个数，从而保证大根堆的顶部元素就是第k大的数
+
+
+
+#### 序列合并
 
 
 ### 并查集
