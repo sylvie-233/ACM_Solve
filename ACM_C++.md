@@ -1,9 +1,9 @@
 # ACM (1 + 2 + 1 + 2)
 
 `董晓算法 A 基础算法：P28`
-`董晓算法 B 搜索：P4`
+`董晓算法 B 搜索：P11`
 `董晓算法 C 数据结构：P`
-`董晓算法 D 图论：P`
+`董晓算法 D 图论：P11`
 `董晓算法 E 动态规划：P`
 `董晓算法 F 字符串：P`
 `董晓算法 G 数学：P`
@@ -587,7 +587,7 @@ void dfs(int u, int fa) {
 
 
 #### BFS
-```c++
+```cpp
 // 邻接表存储图
 std::vector<int> g[N];
 bool vis[N]; // 是否访问过
@@ -618,7 +618,10 @@ void bfs(int start) {
 ```
 
 宽度优先搜索（依赖队列先进先出特性）
+队列中存在两段的层次
 
+
+##### 多源BFS
 
 
 
@@ -2185,8 +2188,20 @@ cout << dp[1] << endl;
 ## 五、图论
 
 
+图的三种基本形态：
+1. 无向图
+2. 有向图
+3. 带权图
+
+
+图的基本属性：顶点数、边数、度
+
+连通图：
+- 无向图：任意两个点之间 存在路径，否则叫非连通图（连通分量）
+- 有向图：强连通（任意 u → v 且 v → u 都能到）
+
 割点：在一个 无向图 中，如果删除某个点（以及它的所有边），图的连通分量数增加，那么这个点就是割点
-桥（割边）：在一个 无向图 中，删除某条边后，图的连通分量数增加，那么这条边就是桥
+割边（桥）：在一个 无向图 中，删除某条边后，图的连通分量数增加，那么这条边就是桥
 边双连通分量：
 点双连通分量
 
@@ -2270,6 +2285,8 @@ h[a] = idx++;
 
 
 ### 拓扑排序
+
+#### Kahn
 ```c++
 vector<int> graph[N];
 int indegree[N]; // 每个点的入度
@@ -2303,15 +2320,56 @@ vector<int> topo_sort() {
 }
 ```
 
+有向无环图（DAG）（kahn算法：基于 BFS / 入度法）
+- 基于有向边，记录入读和出度
+- 用于图中判环、生成拓扑序列
 
-有向无环图（DAG）,（基于 BFS / 入度法）
+
+#### DFS染色
+```cpp
+vector<int> e[N], tp;
+int c[N]; // 染色数组
+
+bool dfs(int x) {
+    c[x] = -1;
+    for (int y : e[x]) {
+        if (c[y] < 0) return 0;
+        else if (!c[y]) {
+            if (!dfs(y)) return 0;
+        }
+    }
+    c[x] = 1;
+    tp.push_back(x);
+    return 1;
+}
+
+bool toposort() {
+    memset(c, 0, sizeof(c));
+    for (int x = 1; x <= n; x++) {
+        if (!c[x])
+            if (!dfs(x)) return 0;
+    }
+    reverse(tp.begin(), tp.end());
+    return 1;
+}
+```
+
+0 -> -1 -> 1染色，dfs遇到-1则为遇到环
 
 
 ### 最短路
 
 
 
-#### Dijkstra 单源最短路
+#### Dijkstra
+
+
+- 基础贪心版本的
+- 优先队列版本的
+
+
+
+##### 单源最短路
 ```c++
 vector<PII> g[N]; // 邻接表：g[u] = {v, w}
 int dist[N];      // dist[i] 表示源点到 i 的最短路径
@@ -2342,33 +2400,16 @@ void dijkstra(int start) {
 }
 ```
 
-
+基于贪心思想、对所有出边进行松弛操作（尝试更新邻点v的最小距离）
 一旦某个点的最短路径被确定，就不会再被更新
 适用于边权非负的图（负边可能导致最短路“提前被确定”，错过更优路径）
 
-#### Floyd 任意两点最短路径
-```c++
-const int INF = INT_MAX;  // 用于表示无穷大，无法到达的点
-
-void floydWarshall(int n, vector<vector<int>>& dist) {
-    // dist[i][j] 表示从节点 i 到节点 j 的最短路径长度
-
-    // 通过中间节点 k 更新路径
-    for (int k = 0; k < n; ++k) {
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                if (dist[i][k] != INF && dist[k][j] != INF) {
-                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
-                }
-            }
-        }
-    }
-}
-```
 
 
 
-#### Bellman-Ford 有负权边
+#### Bellman-Ford
+
+##### 单源最短路 带负权边
 ```c++
 const int INF = 0x3f3f3f3f;
 
@@ -2410,8 +2451,13 @@ bool bellman_ford(int start) {
 
 对于一个 n 个点的图，最多只需要 进行 n-1 次松弛（最长路径就是n-1条边），就能求出所有最短路径（前提：无负环）
 
+- 第一次更新一定是源点相接的点
 
-#### SPFA 带负权最短路
+
+#### SPFA
+
+
+##### 单源最短路 带负权边
 ```c++
 const int INF = 0x3f3f3f3f;
 struct Edge {
@@ -2460,6 +2506,248 @@ bool spfa(int start) {
 
 
 SPFA（Shortest Path Faster Algorithm）最短路径算法模板，它是 Bellman-Ford 的队列优化版本
+- 只有本轮被更新的点，其出边才有可能引起下一轮的松弛操作
+
+
+#### Floyd
+
+全源最短路算法，基于动态规划算法（插点法）
+
+##### 任意两点最短路径
+```c++
+const int INF = INT_MAX;  // 用于表示无穷大，无法到达的点
+
+void floydWarshall(int n, vector<vector<int>>& dist) {
+    // dist[i][j] 表示从节点 i 到节点 j 的最短路径长度
+
+    // 通过中间节点 k 更新路径
+    for (int k = 0; k < n; ++k) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (dist[i][k] != INF && dist[k][j] != INF) {
+                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
+                }
+            }
+        }
+    }
+}
+```
+
+
+##### 无向图最小环
+```cpp
+for (int i = 1; i <= n; i++) {
+    for (int j = 1; j <= n; j++) {
+        dist[i][j] = (i == j ? 0 : INF);
+        w[i][j] = INF;
+    }
+}
+
+for (int i = 0; i < m; i++) {
+    int u, v;
+    long long c;
+    cin >> u >> v >> c;
+    w[u][v] = w[v][u] = min(w[u][v], c);
+    dist[u][v] = dist[v][u] = w[u][v];
+}
+
+long long ans = INF;
+
+for (int k = 1; k <= n; k++) {
+
+    // ① 利用「旧 dist」更新最小环
+    for (int i = 1; i < k; i++) {
+        for (int j = i + 1; j < k; j++) {
+            if (dist[i][j] < INF &&
+                w[i][k] < INF &&
+                w[k][j] < INF) {
+                ans = min(ans, dist[i][j] + w[i][k] + w[k][j]);
+            }
+        }
+    }
+
+    // ② 标准 Floyd 更新
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (dist[i][k] < INF && dist[k][j] < INF) {
+                dist[i][j] = min(dist[i][j],
+                                 dist[i][k] + dist[k][j]);
+            }
+        }
+    }
+}
+```
+
+核心思想：
+在第 k 层：
+    - `dist[i][j]`：只经过 {1..k-1} 的最短路
+    - 再加：边 `i—k`、边 `k—j`
+构成一个首次引入 k 的环
+
+利用了Floyd算法的性质：在最外层循环到点k时（尚未开始第k次循环），`d[i][j]`表示的是从i~j且仅经过编号为1~k-1的点的最短路（即途径编号>=k点的最短路尚未计算），所以最小环一定存在于`ans = d[i][j] + w[i][k] + w[j][k]`
+
+
+#### Johnson
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+static const long long INF = (long long)4e18;
+
+struct Edge {
+    int to;
+    long long w;
+};
+
+int n, m;
+vector<vector<Edge>> g;     // 原图（含负边）
+vector<vector<Edge>> ng;    // 重标权后的图（非负）
+vector<long long> h;        // 势能
+vector<long long> dist;     // Dijkstra 距离
+
+/* ---------------- SPFA：求势能 h，并判负环 ---------------- */
+bool spfa(int S) {
+    vector<int> cnt(n + 1, 0);
+    vector<bool> inq(n + 1, false);
+    queue<int> q;
+
+    for (int i = 0; i <= n; i++) h[i] = INF;
+    h[S] = 0;
+
+    q.push(S);
+    inq[S] = true;
+
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        inq[u] = false;
+
+        for (auto &e : g[u]) {
+            int v = e.to;
+            long long w = e.w;
+            if (h[v] > h[u] + w) {
+                h[v] = h[u] + w;
+                if (!inq[v]) {
+                    q.push(v);
+                    inq[v] = true;
+                    if (++cnt[v] > n) {
+                        // 超过 n 次松弛，说明存在负环
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+/* ---------------- 重标权：构造非负权图 ---------------- */
+void build_new_graph() {
+    for (int u = 1; u <= n; u++) {
+        for (auto &e : g[u]) {
+            int v = e.to;
+            long long w2 = e.w + h[u] - h[v];
+            // Johnson 理论保证 w2 >= 0
+            ng[u].push_back({v, w2});
+        }
+    }
+}
+
+/* ---------------- Dijkstra：单源最短路 ---------------- */
+void dijkstra(int s) {
+    priority_queue<pair<long long,int>,
+                   vector<pair<long long,int>>,
+                   greater<pair<long long,int>>> pq;
+
+    for (int i = 1; i <= n; i++) dist[i] = INF;
+    dist[s] = 0;
+    pq.push({0, s});
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d != dist[u]) continue;
+
+        for (auto &e : ng[u]) {
+            int v = e.to;
+            long long w = e.w;
+            if (dist[v] > d + w) {
+                dist[v] = d + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> n >> m;
+
+    g.assign(n + 1, {});
+    ng.assign(n + 1, {});
+    h.assign(n + 1, INF);
+    dist.assign(n + 1, INF);
+
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        long long w;
+        cin >> u >> v >> w;
+        g[u].push_back({v, w});
+    }
+
+    /* ---------- 建超级源点 0 ---------- */
+    g.insert(g.begin(), vector<Edge>()); // 让 g[0] 存在
+    for (int i = 1; i <= n; i++) {
+        g[0].push_back({i, 0});
+    }
+
+    /* ---------- SPFA 求势能 ---------- */
+    if (!spfa(0)) {
+        cout << "NEGATIVE CYCLE\n";
+        return 0;
+    }
+
+    /* ---------- 去掉超级源点，建新图 ---------- */
+    g.erase(g.begin()); // 删除 0 号点
+    build_new_graph();
+
+    /* ---------- Johnson 主过程 ---------- */
+    // 这里演示：输出所有点对最短路
+    // 实战中如果 n 很大，一般是边算边用
+    vector<vector<long long>> ans(n + 1, vector<long long>(n + 1, INF));
+
+    for (int i = 1; i <= n; i++) {
+        dijkstra(i);
+        for (int j = 1; j <= n; j++) {
+            if (dist[j] < INF) {
+                // 边权还原
+                ans[i][j] = dist[j] - h[i] + h[j];
+            }
+        }
+    }
+
+    /* ---------- 输出示例 ---------- */
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (ans[i][j] >= INF / 2) cout << "INF ";
+            else cout << ans[i][j] << " ";
+        }
+        cout << "\n";
+    }
+
+    return 0;
+}
+```
+
+全源最短路：带负边权的全源最短路
+（核心在于跑spfa，求出势能`h[i]`,从而构造非负边权图）
+1. 新建一个虚拟源点0，从该点向其他所有点连一条边权为0的边，在用spfa算法求出从0号点到其他所有点的最短路h(i)
+2. 将新图的边权改造为`w(u,v) + h(u) - h(v)`，这样能确保边权非负
+3. 以每个点为起点，跑n轮Heap-Dijkstra算法，求出任意两点间最短路
+
+
+
+
 
 
 
@@ -2593,8 +2881,11 @@ int prim(int n, vector<vector<int>>& graph) {
 }
 ```
 
+基于贪心思想：算法流程类似dijkstra算法、不断选距离最小的点出圈，直到圈内为空
 Prim 算法是从某个节点开始，逐渐将图中的其他节点通过最小权重的边连接到生成树中，直到所有节点都被连接
 
+
+##### 堆优化
 
 ### Tarjan
 
@@ -2604,6 +2895,8 @@ Tarjan 算法基于 DFS 遍历，并通过时间戳、low 值、栈，来判断�
 
 在有向图中，如果一组点之间两两可达（也就是每个点都能走到其他所有点），那么这一组点就构成一个 强连通分量
 
+
+#### 强连通分量
 ```c++
 const int N = 1e5 + 10;
 vector<int> graph[N];
@@ -2688,11 +2981,6 @@ void dfs(int u, int fa, int dist) {
 
 
 #### 树的重心
-
-在一棵 无根树 中，重心（centroid）是这样的一个点：
-- 删除这个点后，整棵树会被分成若干棵子树；
-- 在这些子树中，最大的子树的节点数最少；
-换句话说，这个点使得删除后“最大块”尽可能小。
 ```c++
 int n;
 vector<int> G[N];
@@ -2726,12 +3014,20 @@ void dfs(int u, int parent) {
 }
 ```
 
+在一棵 无根树 中，重心（centroid）是这样的一个点：
+- 删除这个点后，整棵树会被分成若干棵子树；
+- 在这些子树中，最大的子树的节点数最少；
+换句话说，这个点使得删除后“最大块”尽可能小。
+
 ### LCA
 
 倍增法（O(n log n) 预处理，O(log n) 查询）
 RMQ + 欧拉序（O(1) 查询）
 Tarjan 离线并查集（离线多次 LCA 查询）
 
+
+
+#### 倍增法
 ```c++
 int fa[N][LOG]; // fa[u][k] = u 的第 2^k 级祖先
 int depth[N];
@@ -2765,7 +3061,180 @@ int lca(int u, int v) {
 ```
 
 
+#### Tarjan
+```cpp
+int n, q, root;
+vector<int> tree[MAXN];
+vector<pair<int,int>> query[MAXN]; // (另一端点, 查询编号)
+int ans[MAXN];
+
+int fa[MAXN];        // 并查集
+int ancestor[MAXN];  // 当前集合对应的祖先
+bool vis[MAXN];      // 是否已访问
+
+/* ---------- 并查集 ---------- */
+int find(int x) {
+    if (fa[x] == x) return x;
+    return fa[x] = find(fa[x]);
+}
+
+void unite(int x, int y) {
+    x = find(x);
+    y = find(y);
+    if (x != y) fa[y] = x;
+}
+
+/* ---------- Tarjan DFS ---------- */
+void tarjan(int u, int parent) {
+    fa[u] = u;
+    ancestor[u] = u; // 每次都以自己为树根
+    vis[u] = true;
+
+    for (int v : tree[u]) {
+        if (v == parent) continue;
+        tarjan(v, u);
+        unite(u, v);
+        ancestor[find(u)] = u;
+    }
+
+    for (auto [v, id] : query[u]) {
+        if (vis[v]) {
+            ans[id] = ancestor[find(v)];
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> n >> q >> root;
+
+    for (int i = 1; i <= n; i++) {
+        tree[i].clear();
+        query[i].clear();
+        vis[i] = false;
+    }
+
+    for (int i = 1; i < n; i++) {
+        int u, v;
+        cin >> u >> v;
+        tree[u].push_back(v);
+        tree[v].push_back(u);
+    }
+
+    for (int i = 0; i < q; i++) {
+        int u, v;
+        cin >> u >> v;
+        query[u].push_back({v, i});
+        query[v].push_back({u, i});
+    }
+
+    tarjan(root, 0);
+
+    for (int i = 0; i < q; i++) {
+        cout << ans[i] << "\n";
+    }
+
+    return 0;
+}
+```
+
+离线查询
+一次 DFS + 并查集、离线回答多组 LCA 查询
+1. DFS 遍历树
+2. 每访问完一个子树，把它 并到父节点（DSU）
+3. 用`ancestor[find(x)]`记录当前并查集代表的“祖先”
+4. 当 (u, v) 两个点都被访问过时：`LCA(u, v) = ancestor[find(v)]`
+
+
 ### 树链剖分
+
+
+#### LCA
+```cpp
+int n, q;
+vector<int> G[N];
+
+int fa[N], dep[N], sz[N];
+int son[N]; // 重儿子
+int top[N]; // 所在重链的顶点
+int dfn[N], rnk[N], timer; // DFS序，rnk 是 dfn 的逆映射
+
+/* ---------- dfs1：求重儿子 ---------- */
+void dfs1(int u, int father) {
+    fa[u] = father;
+    dep[u] = dep[father] + 1;
+    sz[u] = 1;
+    son[u] = 0;
+
+    int max_size = -1;
+    for (int v : G[u]) {
+        if (v == father) continue;
+        dfs1(v, u);
+        sz[u] += sz[v];
+        if (sz[v] > max_size) {
+            max_size = sz[v];
+            son[u] = v;
+        }
+    }
+}
+
+/* ---------- dfs2：剖分 ---------- */
+void dfs2(int u, int topf) {
+    dfn[u] = ++timer;
+    rnk[timer] = u;
+    top[u] = topf;
+
+    if (son[u]) {
+        dfs2(son[u], topf);
+    }
+
+    for (int v : G[u]) {
+        if (v != fa[u] && v != son[u]) {
+            dfs2(v, v);
+        }
+    }
+}
+
+/* ---------- LCA ---------- */
+int lca(int u, int v) {
+    while (top[u] != top[v]) {
+        if (dep[top[u]] < dep[top[v]])
+            swap(u, v);
+        u = fa[top[u]];
+    }
+    return dep[u] < dep[v] ? u : v;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int u, v;
+        cin >> u >> v;
+        G[u].push_back(v);
+        G[v].push_back(u);
+    }
+
+    dfs1(1, 0);
+    dfs2(1, 1);
+
+    cin >> q;
+    while (q--) {
+        int u, v;
+        cin >> u >> v;
+        cout << lca(u, v) << "\n";
+    }
+
+    return 0;
+}
+```
+
+
+#### 路径和查询 单点修改
 ```c++
 const int N = 1e5 + 10;
 
@@ -2889,22 +3358,247 @@ seg.build(1, 1, n);
 
 
 
+### 二分图
+
+
+#### 二分图判定
+
+
+##### DFS染色
+```cpp
+const int N = 200005;
+vector<int> g[N];
+int color[N];   // -1 未染色，0 / 1
+
+bool dfs(int u, int c) {
+    color[u] = c;
+    for (int v : g[u]) {
+        if (color[v] == -1) {
+            if (!dfs(v, c ^ 1)) return false;
+        } else if (color[v] == c) {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+
+
+#### 二分图最大匹配
+
+
+
+##### 匈牙利算法
+```cpp
+vector<int> g[N];
+int matchR[N];   // 右边点匹配到的左点
+bool vis[N];
+
+bool dfs(int u) {
+    for (int v : g[u]) {
+        if (vis[v]) continue;
+        vis[v] = true;
+        if (!matchR[v] || dfs(matchR[v])) {
+            matchR[v] = u;
+            return true;
+        }
+    }
+    return false;
+}
+
+int hungarian(int n) {
+    int res = 0;
+    memset(matchR, 0, sizeof(matchR));
+    for (int u = 1; u <= n; u++) {
+        memset(vis, 0, sizeof(vis));
+        if (dfs(u)) res++;
+    }
+    return res;
+}
+```
+
+
+DFS 增广
+
+
+
+##### Hopcroft–Kar
+```cpp
+const int INF = 1e9;
+vector<int> g[N];
+int n, m;              // 左 n，右 m
+int dist[N], matchL[N], matchR[N];
+
+bool bfs() {
+    queue<int> q;
+    for (int i = 1; i <= n; i++) {
+        if (!matchL[i]) dist[i] = 0, q.push(i);
+        else dist[i] = INF;
+    }
+
+    bool found = false;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : g[u]) {
+            if (matchR[v] && dist[matchR[v]] == INF) {
+                dist[matchR[v]] = dist[u] + 1;
+                q.push(matchR[v]);
+            }
+            if (!matchR[v]) found = true;
+        }
+    }
+    return found;
+}
+
+bool dfs(int u) {
+    for (int v : g[u]) {
+        if (!matchR[v] || 
+            (dist[matchR[v]] == dist[u] + 1 && dfs(matchR[v]))) {
+            matchL[u] = v;
+            matchR[v] = u;
+            return true;
+        }
+    }
+    dist[u] = INF;
+    return false;
+}
+
+int hopcroft_karp() {
+    int res = 0;
+    memset(matchL, 0, sizeof(matchL));
+    memset(matchR, 0, sizeof(matchR));
+    while (bfs()) {
+        for (int i = 1; i <= n; i++) {
+            if (!matchL[i] && dfs(i)) res++;
+        }
+    }
+    return res;
+}
+```
+
+
+
+### 网络流
+
+
+
+#### Dinic
+
+
+##### 最大流
+```cpp
+struct Dinic {
+    struct Edge {
+        int to, cap;
+    };
+
+    int n;
+    vector<Edge> edges;
+    vector<vector<int>> g;
+    vector<int> level, cur;
+
+    Dinic(int n) : n(n), g(n), level(n), cur(n) {}
+
+    void add_edge(int u, int v, int cap) {
+        edges.push_back({v, cap});
+        edges.push_back({u, 0});
+        g[u].push_back(edges.size() - 2);
+        g[v].push_back(edges.size() - 1);
+    }
+
+    bool bfs(int s, int t) {
+        fill(level.begin(), level.end(), -1);
+        queue<int> q;
+        level[s] = 0;
+        q.push(s);
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int id : g[u]) {
+                auto &e = edges[id];
+                if (e.cap > 0 && level[e.to] == -1) {
+                    level[e.to] = level[u] + 1;
+                    q.push(e.to);
+                }
+            }
+        }
+        return level[t] != -1;
+    }
+
+    int dfs(int u, int t, int f) {
+        if (!f || u == t) return f;
+        for (int &i = cur[u]; i < g[u].size(); i++) {
+            int id = g[u][i];
+            auto &e = edges[id];
+            if (e.cap > 0 && level[e.to] == level[u] + 1) {
+                int pushed = dfs(e.to, t, min(f, e.cap));
+                if (pushed) {
+                    e.cap -= pushed;
+                    edges[id ^ 1].cap += pushed;
+                    return pushed;
+                }
+            }
+        }
+        return 0;
+    }
+
+    int maxflow(int s, int t) {
+        int flow = 0;
+        while (bfs(s, t)) {
+            fill(cur.begin(), cur.end(), 0);
+            while (int pushed = dfs(s, t, INF)) {
+                flow += pushed;
+            }
+        }
+        return flow;
+    }
+};
+```
+
+
+##### 二分图最大匹配
+```cpp
+int S = 0, T = n + m + 1;
+Dinic dinic(T + 1);
+
+for (int i = 1; i <= n; i++)
+    dinic.add_edge(S, i, 1);
+
+for (int i = 1; i <= m; i++)
+    dinic.add_edge(n + i, T, 1);
+
+for (auto [u, v] : edges)
+    dinic.add_edge(u, n + v, 1);
+
+int maxMatch = dinic.maxflow(S, T);
+```
+
+
+
 ## 六、数学
 
 ### 数论
 
+基础数论概念：
+- 整除、同余
+- 最大公约数、最小公倍数
+- 质数、合数
+- 欧拉函数：1 ~ n 中与 n 互质的数的个数
+- 逆元：
 
-#### GCD 最大公约数
+
+#### GCD 
 ```c++
 int gcd(int a, int b) {
     return b == 0 ? a : gcd(b, a % b);
 }
 ```
 
-欧几里得算法
+欧几里得算法、最大公约数
 
 
-##### GCD EX 扩展欧几里得
+
+##### 裴蜀定理
 ```c++
 int exgcd(int a, int b, int &x, int &y) {
     // b = 0, gcd(a, b) = a
@@ -2918,8 +3612,13 @@ int exgcd(int a, int b, int &x, int &y) {
 }
 ```
 
-解 ax + by = gcd(a, b)
+对任意整数 a, b，存在整数 x, y，使得`ax + by = gcd(a, b)`
+扩展欧几里得
+
+解`ax + by = gcd(a, b)`
 ![扩展欧几里得算法](.assets/扩展欧几里得算法.png)
+
+
 
 
 #### 素数筛
@@ -2977,10 +3676,19 @@ void euler_sieve(int n) {
 
 
 #### 模逆元
-
+```cpp
+long long inv(long long a, long long mod) {
+    long long x, y;
+    long long g = exgcd(a, mod, x, y);
+    if (g != 1) return -1; // 不存在
+    return (x % mod + mod) % mod;
+}
+```
 
 
 ##### 费马小定理
+
+`a^(p-1) ≡ 1 (mod p)`（模是质数）
 
 
 ![费马小定理求逆元](.assets/费马小定理求逆元.png)
@@ -2990,6 +3698,24 @@ void euler_sieve(int n) {
 
 
 #### 欧拉函数
+```cpp
+long long phi(long long n) {
+    long long res = n;
+    for (long long i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            res = res / i * (i - 1);
+            while (n % i == 0) n /= i;
+        }
+    }
+    if (n > 1) res = res / n * (n - 1);
+    return res;
+}
+```
+
+
+
+##### 欧拉定理
+`a^φ(m) ≡ 1 (mod m)，gcd(a,m)=1`
 
 
 #### 中国剩余定理
@@ -3038,6 +3764,15 @@ ll C(int n, int k) {
 ![大组合数求模逆元](.assets/大组合数求模逆元.png)
 ![逆元递推](.assets/逆元递推.png)
 
+
+
+#### 多项式
+
+
+##### FFT
+
+
+##### NTT
 
 
 
