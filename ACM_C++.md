@@ -3,8 +3,8 @@
 `董晓算法 A 基础算法：P28`
 `董晓算法 B 搜索：P11`
 `董晓算法 C 数据结构：P`
-`董晓算法 D 图论：P21`
-`董晓算法 E 动态规划：P`
+`董晓算法 D 图论：P26`
+`董晓算法 E 动态规划：P11`
 `董晓算法 F 字符串：P`
 `董晓算法 G 数学：P`
 
@@ -1976,6 +1976,22 @@ public:
 
 状态转移方程
 
+DP的步骤：
+1. 确定状态变量（函数）
+2. 确定转移方程（递推关系）
+3. 确定边界条件
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+4. 确定递推顺序
+
 
 ### 线性DP
 
@@ -1995,7 +2011,13 @@ public:
 
 
 
+#### 编辑距离
 
+从一个字符串修改到另一个字符串时，编辑单个字符（修改、插入、删除）所需的最少次数
+
+子问题：从`a[1..i]`到`b[1..j]`的编辑距离
+
+可使用滚动数组优化空间大小、降为一维数组
 
 ### 背包DP
 
@@ -2015,7 +2037,10 @@ for (int i = 0; i < n; ++i) {
 
 ```
 
-问题描述：有 n 个物品和一个容量为 W 的背包，每个物品有重量 w[i] 和价值 v[i]。每个物品只能选一次，问最大总价值是多少
+问题描述：有 n 个物品和一个容量为 W 的背包，每个物品有重量 `w[i]` 和价值 `v[i]`。每个物品只能选一次，问最大总价值是多少
+
+
+初始DP问题：`f[i][j]`表示前i件物品放入容量为j的背包的最大价值
 
 
 #### 完全背包
@@ -3595,11 +3620,23 @@ seg.build(1, 1, n);
 重链上的dfs序(`dfn[i]`)是有序的，从小到大
 
 
+### 基环树
 
+基环树（Block-Cut Tree / 基环树） 是对一个图中的环和树结构 的一种抽象，把一个带环的连通图拆成 环 + 树 的形式：
+- 环：原图中存在的环
+- 树：环外的节点组成的树，连接到环上
 
+构造基环树：
+1. 找出图中的 环（一般用 DFS 找回边）
+2. 将每个环 看作一个超级节点（环节点）
+3. 原图中不在环上的树结构，依旧保持树的性质
+4.用边把 树节点与环节点连接
 
 
 ### 二分图
+
+二分图：如果一张无向图的N个节点可以分成A，B两个不相交的非空集合，并且同一集合内的点没有边相连，那么称该无向图为二分图
+- 二分图不存在长度为奇数的环
 
 
 #### 二分图判定
@@ -3629,6 +3666,11 @@ bool dfs(int u, int c) {
 #### 二分图最大匹配
 
 
+交替路：从一个未匹配点出发、依次经过非匹配边、匹配边、非匹配边...形成的路径叫交替路
+
+增广路：从一个未匹配点出发、走交替路，若能到达另一个未匹配点，则这条路称为增广路
+
+
 
 ##### 匈牙利算法
 ```cpp
@@ -3639,9 +3681,9 @@ bool vis[N];
 bool dfs(int u) {
     for (int v : g[u]) {
         if (vis[v]) continue;
-        vis[v] = true;
-        if (!matchR[v] || dfs(matchR[v])) {
-            matchR[v] = u;
+        vis[v] = true; // u->v 未匹配边
+        if (!matchR[v] || dfs(matchR[v])) { // v->match[v]匹配边 
+            matchR[v] = u; // 交换匹配边、未匹配边，匹配+1
             return true;
         }
     }
@@ -3659,9 +3701,8 @@ int hungarian(int n) {
 }
 ```
 
-
 DFS 增广
-
+通过不停地找增广路来增加匹配边。找不到增广路时，达到最大匹配。
 
 
 ##### Hopcroft–Kar
@@ -3727,6 +3768,11 @@ int hopcroft_karp() {
 残留网：由网络中所有节点和剩余容量大于0的边构成的子图（边包括有向边和其反向边）
 
 建图时每条有向边(x,y)都构建一条反向边(y,x)，初始容量c(y,x)=0。构建反向边的目的是提供一个“退流管道”，一旦前面的增广路堵死可行流，可以通过退流管道退流，提供了“后悔机制”
+
+
+最小割: 求得一个割(S, T),使得割的容量最小(最小割的方案往往不是唯一的)
+- 割: 将所有点划分为S和T两个集合,对于任意一个割,都会使网络断流
+- 割的容量: 所有从S到T的出边的容量之和
 
 
 #### EK
@@ -3819,6 +3865,82 @@ int main() {
 ```
 
 
+
+##### 最小费用最大流
+```cpp
+struct Edge {
+    int to, rev;    // 目标节点，下标为反向边在G[to]的下标
+    int cap;        // 容量
+    int cost;       // 单位流量花费
+};
+
+const int MAXN = 1005;
+const int INF = 1e9;
+
+vector<Edge> G[MAXN];
+int dist[MAXN], prevv[MAXN], preve[MAXN]; // prevv: 前一个节点, preve: 前一条边下标
+int N; // 节点数
+
+void addEdge(int from, int to, int cap, int cost) {
+    G[from].push_back({to, (int)G[to].size(), cap, cost});
+    G[to].push_back({from, (int)G[from].size()-1, 0, -cost});
+}
+
+// 寻找增广路并计算最小费用
+pair<int,int> minCostMaxFlow(int s, int t) {
+    int flow = 0, cost = 0;
+    while (true) {
+        fill(dist, dist+N, INF);
+        dist[s] = 0;
+        bool updated = true;
+        while (updated) {
+            updated = false;
+            for (int v = 0; v < N; v++) {
+                if (dist[v] == INF) continue;
+                for (int i = 0; i < G[v].size(); i++) {
+                    Edge &e = G[v][i];
+                    if (e.cap > 0 && dist[e.to] > dist[v] + e.cost) {
+                        dist[e.to] = dist[v] + e.cost;
+                        prevv[e.to] = v;
+                        preve[e.to] = i;
+                        updated = true;
+                    }
+                }
+            }
+        }
+        if (dist[t] == INF) break; // 没有增广路了
+        // 找到最小残量
+        int d = INF;
+        for (int v = t; v != s; v = prevv[v])
+            d = min(d, G[prevv[v]][preve[v]].cap);
+        flow += d;
+        cost += d * dist[t];
+        for (int v = t; v != s; v = prevv[v]) {
+            Edge &e = G[prevv[v]][preve[v]];
+            e.cap -= d;
+            G[v][e.rev].cap += d;
+        }
+    }
+    return {flow, cost};
+}
+
+int main() {
+    // 示例：N=4, s=0, t=3
+    N = 4;
+    addEdge(0, 1, 2, 1);
+    addEdge(0, 2, 1, 2);
+    addEdge(1, 2, 1, 1);
+    addEdge(1, 3, 1, 3);
+    addEdge(2, 3, 2, 1);
+
+    auto [f, c] = minCostMaxFlow(0, 3);
+    cout << "最大流: " << f << ", 最小费用: " << c << "\n";
+}
+```
+
+在EK算法求解最大流的基础上，把“用BFS寻找一条增广路”改为“用SPFA寻找一条单位费用流之和最小的增广路”（把w(u,v)当作边权，在残留网上求最短路），即可求出最小费用最大流
+
+
 #### Dinic
 
 
@@ -3897,6 +4019,13 @@ struct Dinic {
 ```
 
 
+##### 最小割
+```cpp
+```
+
+求出最大流后,从源点开始对残留网DFS,标记能够到达的点,则标记的点构成S集合,未标记的点构成T集合,这就是最小割
+
+
 ##### 二分图最大匹配
 ```cpp
 int S = 0, T = n + m + 1;
@@ -3913,6 +4042,9 @@ for (auto [u, v] : edges)
 
 int maxMatch = dinic.maxflow(S, T);
 ```
+
+
+创建虚拟源点和汇点，原来的每条边从左到右连边，容量为1，最大流即最大匹配
 
 
 
