@@ -1303,6 +1303,45 @@ st.update_range(1, 3, 2)  # 区间 [1,3] 加上 2
 print(st.query_sum(1, 3))  # 3+5+6 = 14
 print(st.query_max(1, 3))  # max(3,5,6) = 6
 print(st.query_min(1, 3))  # min(3,5,6) = 3
+
+
+
+# log2优化版
+class SparseTable:
+    def __init__(self, arr):
+        self.n = len(arr)
+        self.log = [0] * (self.n + 1)
+
+        for i in range(2, self.n + 1):
+            self.log[i] = self.log[i // 2] + 1
+
+        k = self.log[self.n] + 1
+
+        self.st_max = [[0] * k for _ in range(self.n)]
+        self.st_min = [[0] * k for _ in range(self.n)]
+
+        for i in range(self.n):
+            self.st_max[i][0] = arr[i]
+            self.st_min[i][0] = arr[i]
+
+        j = 1
+        while (1 << j) <= self.n:
+            for i in range(self.n - (1 << j) + 1):
+                self.st_max[i][j] = max(
+                    self.st_max[i][j - 1], self.st_max[i + (1 << (j - 1))][j - 1]
+                )
+                self.st_min[i][j] = min(
+                    self.st_min[i][j - 1], self.st_min[i + (1 << (j - 1))][j - 1]
+                )
+            j += 1
+
+    def query_max(self, l, r):
+        k = self.log[r - l + 1]
+        return max(self.st_max[l][k], self.st_max[r - (1 << k) + 1][k])
+
+    def query_min(self, l, r):
+        k = self.log[r - l + 1]
+        return min(self.st_min[l][k], self.st_min[r - (1 << k) + 1][k])
 ```
 
 ### 树状数组（BIT）
