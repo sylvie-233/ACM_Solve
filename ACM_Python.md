@@ -3204,6 +3204,60 @@ for num in nums:
 ### 线性代数
 
 #### 矩阵快速幂
+```python
+class Matrix:
+
+    def __init__(self, n, data=None):
+        self.n = n
+        if data:
+            self.a = data
+        else:
+            self.a = [[0] * n for _ in range(n)]
+
+    @staticmethod
+    def identity(n):
+        m = Matrix(n)
+        for i in range(n):
+            m.a[i][i] = 1
+        return m
+
+    def copy(self):
+        return Matrix(self.n, [row[:] for row in self.a])
+
+    def __getitem__(self, item):
+        return self.a[item]
+
+    def __mul__(self, other):
+        res = Matrix(self.n)
+
+        for i in range(self.n):
+            for k in range(self.n):
+                if self.a[i][k] == 0:
+                    continue
+                for j in range(self.n):
+                    res.a[i][j] = (
+                        res.a[i][j] + self.a[i][k] * other.a[k][j]
+                    ) % MOD
+
+        return res
+
+    def __pow__(self, exp):
+        base = self.copy()
+        res = Matrix.identity(self.n)
+
+        while exp:
+            if exp & 1:
+                res = res * base
+            base = base * base
+            exp >>= 1
+
+        return res
+
+    def __repr__(self):
+        return "\n".join(map(str, self.a))
+```
+
+
 #### 高斯消元
 
 

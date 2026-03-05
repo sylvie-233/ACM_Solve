@@ -6,7 +6,7 @@
 `董晓算法 D 图论：P26`
 `董晓算法 E 动态规划：P28`
 `董晓算法 F 字符串：P`
-`董晓算法 G 数学：P`
+`董晓算法 G 数学：P4`
 
 ## 一、基础算法
 
@@ -4371,7 +4371,57 @@ ll C(int n, int k) {
 
 ### 线性代数
 
+#### 矩阵快速幂
+```cpp
+class Matrix {
+public:
+    static const long long MOD = 1e9 + 7;
 
+    int n;
+    vector<vector<long long>> a;
+
+    Matrix(int n) : n(n), a(n, vector<long long>(n, 0)) {}
+
+    // 单位矩阵
+    static Matrix identity(int n) {
+        Matrix I(n);
+        for (int i = 0; i < n; i++)
+            I.a[i][i] = 1;
+        return I;
+    }
+
+    // 矩阵乘法
+    Matrix operator*(const Matrix& other) const {
+        Matrix res(n);
+
+        for (int i = 0; i < n; i++) {
+            for (int k = 0; k < n; k++) {
+                if (a[i][k] == 0) continue;
+                for (int j = 0; j < n; j++) {
+                    res.a[i][j] = (res.a[i][j] + a[i][k] * other.a[k][j]) % MOD;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    // 矩阵快速幂
+    static Matrix pow(Matrix base, long long exp) {
+        Matrix res = identity(base.n);
+
+        while (exp) {
+            if (exp & 1)
+                res = res * base;
+
+            base = base * base;
+            exp >>= 1;
+        }
+
+        return res;
+    }
+};
+```
 
 
 
