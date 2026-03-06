@@ -1605,6 +1605,69 @@ Tree + Heap
 
 
 #### 0-1 字典树
+```python
+WIDTH = 15  # nums[i] 二进制长度的最大值
+
+
+class Node:
+    __slots__ = ("son", "leaf")
+
+    def __init__(self):
+        self.son: List[Optional[Node]] = [None, None]
+        self.leaf: int = 0
+
+
+class Trie:
+    def __init__(self):
+        self.root: Node = Node()
+
+    def put(self, val: int) -> None:
+        cur = self.root
+
+        for i in range(WIDTH - 1, -1, -1):
+            bit = (val >> i) & 1
+
+            if cur.son[bit] is None:
+                cur.son[bit] = Node()
+
+            nxt = cur.son[bit]
+            assert nxt is not None
+
+            cur = nxt
+            cur.leaf += 1
+
+    def delete(self, val: int) -> None:
+        cur = self.root
+
+        for i in range(WIDTH - 1, -1, -1):
+            bit = (val >> i) & 1
+
+            nxt = cur.son[bit]
+            assert nxt is not None
+
+            cur = nxt
+            cur.leaf -= 1
+
+    def max_xor(self, val: int) -> int:
+        cur = self.root
+        ans = 0
+
+        for i in range(WIDTH - 1, -1, -1):
+            bit = (val >> i) & 1
+
+            other = cur.son[bit ^ 1]
+
+            if other is not None and other.leaf > 0:
+                ans |= 1 << i
+                bit ^= 1
+
+            nxt = cur.son[bit]
+            assert nxt is not None
+
+            cur = nxt
+
+        return ans
+```
 
 
 ### KMP
