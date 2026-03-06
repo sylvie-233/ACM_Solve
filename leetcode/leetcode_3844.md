@@ -1,7 +1,7 @@
 # 3844. 最长的准回文子字符串
 
 
-回文串判断
+回文串判断（中心扩散）
 ```python
 class Solution:
     def almostPalindromic(self, s: str) -> int:

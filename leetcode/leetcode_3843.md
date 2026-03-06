@@ -1,7 +1,7 @@
 # 3843. 频率唯一的第一个元素
 
 
-
+hash表
 ```python
 from collections import Counter
 
