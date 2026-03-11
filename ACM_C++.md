@@ -5,8 +5,8 @@
 `董晓算法 C 数据结构：P`
 `董晓算法 D 图论：P26`
 `董晓算法 E 动态规划：P28`
-`董晓算法 F 字符串：P`
-`董晓算法 G 数学：P4`
+`董晓算法 F 字符串：P6`
+`董晓算法 G 数学：P8`
 
 ## 一、基础算法
 
@@ -1842,6 +1842,10 @@ cout << H.query(4, 7) << "\n"; // "caba"
 ```
 
 
+支持区间字符串Hash查询
+本质和10进制数原理一样
+
+
 
 #### 二维滚动Hash
 ```cpp
@@ -1993,6 +1997,302 @@ public:
 - 支持前缀自动补全 / 匹配
 - 有时也可以配合异或操作处理数值（比如最大异或对）
 
+
+
+#### 01字典树
+
+
+
+
+### KMP
+```cpp
+class KMP {
+private:
+    string pattern;
+    vector<int> lps; // longest prefix suffix
+
+    void build_lps() {
+        int n = pattern.size();
+        lps.assign(n, 0);
+
+        int j = 0;
+
+        for (int i = 1; i < n; i++) {
+            while (j > 0 && pattern[i] != pattern[j])
+                j = lps[j - 1];
+
+            if (pattern[i] == pattern[j])
+                j++;
+
+            lps[i] = j;
+        }
+    }
+
+public:
+    KMP(const string& pat) {
+        pattern = pat;
+        build_lps();
+    }
+
+    // 返回第一个匹配位置，没有返回 -1
+    int find_first(const string& text) const {
+        int n = text.size();
+        int m = pattern.size();
+
+        int j = 0;
+
+        for (int i = 0; i < n; i++) {
+            while (j > 0 && text[i] != pattern[j])
+                j = lps[j - 1];
+
+            if (text[i] == pattern[j])
+                j++;
+
+            if (j == m)
+                return i - m + 1;
+        }
+
+        return -1;
+    }
+
+    // 返回所有匹配位置
+    vector<int> find_all(const string& text) const {
+        vector<int> res;
+
+        int n = text.size();
+        int m = pattern.size();
+
+        int j = 0;
+
+        for (int i = 0; i < n; i++) {
+            while (j > 0 && text[i] != pattern[j])
+                j = lps[j - 1];
+
+            if (text[i] == pattern[j])
+                j++;
+
+            if (j == m) {
+                res.push_back(i - m + 1);
+                j = lps[j - 1];
+            }
+        }
+
+        return res;
+    }
+
+    const vector<int>& get_lps() const {
+        return lps;
+    }
+};
+
+
+string text = "ababcabcabababd";
+string pattern = "ababd";
+KMP kmp(pattern);
+cout << "first position: " << kmp.find_first(text) << endl;
+```
+
+在 KMP 算法中，LPS 数组（Longest Prefix Suffix）表示：
+对于模式串 `pattern[0..i]`，最长的 “既是前缀又是后缀” 的子串长度
+
+`lps[i]` = `pattern[0..i]`最长相等 前缀 = 后缀 的长度
+
+| index   | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| ------- | - | - | - | - | - | - | - |
+| pattern | a | b | a | b | a | c | a |
+| lps     | 0 | 0 | 1 | 2 | 3 | 0 | 1 |
+
+
+
+#### 扩展KMP
+```cpp
+class ExKMP {
+private:
+    string pattern;
+    vector<int> z;
+
+    void build_z() {
+        int n = pattern.size();
+        z.assign(n, 0);
+
+        int l = 0, r = 0;
+        z[0] = n;
+
+        for (int i = 1; i < n; i++) {
+            if (i <= r)
+                z[i] = min(r - i + 1, z[i - l]);
+
+            while (i + z[i] < n && pattern[z[i]] == pattern[i + z[i]])
+                z[i]++;
+
+            if (i + z[i] - 1 > r) {
+                l = i;
+                r = i + z[i] - 1;
+            }
+        }
+    }
+
+public:
+    ExKMP(const string& pat) {
+        pattern = pat;
+        build_z();
+    }
+
+    // 获取 z 数组
+    const vector<int>& get_z() const {
+        return z;
+    }
+
+    // 计算 extend 数组
+    vector<int> match(const string& text) const {
+        int n = text.size();
+        int m = pattern.size();
+
+        vector<int> extend(n);
+
+        int l = 0, r = 0;
+
+        while (extend[0] < n && extend[0] < m &&
+               text[extend[0]] == pattern[extend[0]])
+            extend[0]++;
+
+        r = extend[0] - 1;
+
+        for (int i = 1; i < n; i++) {
+            if (i <= r)
+                extend[i] = min(r - i + 1, z[i - l]);
+
+            while (i + extend[i] < n &&
+                   extend[i] < m &&
+                   text[i + extend[i]] == pattern[extend[i]])
+                extend[i]++;
+
+            if (i + extend[i] - 1 > r) {
+                l = i;
+                r = i + extend[i] - 1;
+            }
+        }
+
+        return extend;
+    }
+};
+
+string text = "abababab";
+string pattern = "abab";
+ExKMP ex(pattern);
+auto extend = ex.match(text);
+for (int x : extend)
+    cout << x << " ";
+```
+
+扩展 KMP（ExKMP / Z Algorithm）通常用于：求 字符串每个位置与模式串前缀的最长匹配
+![扩展KMP](./.assets/扩展KMP.png)
+![扩展KMP_match](./.assets/扩展KMP_match.png)
+
+1. `z[i]`：`pattern[i:]` 与 pattern 的最长公共前缀
+2. `extend[i]`：`text[i:]` 与 pattern 的最长公共前缀
+
+pattern = "abab"
+
+| i | 子串 pattern[i:] | 与 pattern 的 LCP | z[i] |
+| - | -------------- | --------------- | ---- |
+| 0 | abab           | abab            | 4    |
+| 1 | bab            | ""              | 0    |
+| 2 | ab             | ab              | 2    |
+| 3 | b              | ""              | 0    |
+
+
+### Manacher
+```cpp
+class Manacher {
+private:
+    string s;
+    string t;
+    vector<int> p;
+
+    void preprocess() {
+        t = "^";
+        for (char c : s) {
+            t += "#";
+            t += c;
+        }
+        t += "#$";
+    }
+
+    void build() {
+        int n = t.size();
+        p.assign(n, 0);
+
+        int center = 0, right = 0;
+
+        for (int i = 1; i < n - 1; i++) {
+            int mirror = 2 * center - i;
+
+            if (i < right)
+                p[i] = min(right - i, p[mirror]);
+
+            while (t[i + 1 + p[i]] == t[i - 1 - p[i]])
+                p[i]++;
+
+            if (i + p[i] > right) {
+                center = i;
+                right = i + p[i];
+            }
+        }
+    }
+
+public:
+    Manacher(const string& str) {
+        s = str;
+        preprocess();
+        build();
+    }
+
+    // 获取最长回文子串长度
+    int longest() const {
+        return *max_element(p.begin(), p.end());
+    }
+
+    // 获取最长回文子串
+    string longest_palindrome() const {
+        int center = 0, len = 0;
+
+        for (int i = 0; i < p.size(); i++) {
+            if (p[i] > len) {
+                len = p[i];
+                center = i;
+            }
+        }
+
+        int start = (center - len) / 2;
+        return s.substr(start, len);
+    }
+
+    // 获取回文半径数组
+    const vector<int>& radius() const {
+        return p;
+    }
+};
+
+
+```
+
+![Manacher](./.assets/Manacher.png)
+`p[i] = 以 i 为中心的回文半径（不包含当前字符）`
+`回文长度 = 2 * p[i] + 1`
+
+t = ^#a#b#b#a#$
+
+| i | 字符 | p[i] |
+| - | -- | ---- |
+| 1 | #  | 0    |
+| 2 | a  | 1    |
+| 3 | #  | 0    |
+| 4 | b  | 1    |
+| 5 | #  | 4    |
+| 6 | b  | 1    |
+| 7 | #  | 0    |
+| 8 | a  | 1    |
 
 
 
@@ -4211,11 +4511,54 @@ int exgcd(int a, int b, int &x, int &y) {
 ![扩展欧几里得算法](.assets/扩展欧几里得算法.png)
 
 
+#### 素数
+
+##### 试除法
+```cpp
+bool is_prime(ll n) {
+    if (n < 2) return false;
+
+    for (ll i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+```
 
 
-#### 素数筛
+##### 质因数分解
+```cpp
+// 试除法分解质因数
+vector<pair<long long,int>> factor(long long n) {
+    vector<pair<long long,int>> res;
 
-##### 埃氏筛法
+    for (long long i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            int cnt = 0;
+            while (n % i == 0) {
+                n /= i;
+                cnt++;
+            }
+            res.push_back({i, cnt});
+        }
+    }
+
+    if (n > 1) {
+        res.push_back({n, 1});
+    }
+
+    return res;
+}
+
+```
+
+
+##### 素数筛
+
+###### 埃氏筛法
 ```c++
 const int N = 1e6 + 10;
 bool is_prime[N];
@@ -4241,7 +4584,7 @@ void eratosthenes(int n) {
 
 
 
-##### 欧拉筛法
+###### 欧拉筛法
 ```c++
 const int N = 1e6 + 10;
 int primes[N], cnt = 0;
