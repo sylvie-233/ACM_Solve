@@ -810,7 +810,7 @@ class SegTree {
 }  // namespace DS
 
 // 字符串库
-namespace SS {
+namespace Str {
 // 一维滚动Hash
 class StringHash1D {
  private:
@@ -965,3 +965,9 @@ class Trie {
   }
 };
 }  // namespace SS
+
+
+// 图论相关
+namespace Graph {
+
+}

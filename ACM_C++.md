@@ -1,12 +1,5 @@
 # ACM (1 + 2 + 1 + 2)
 
-`董晓算法 A 基础算法：P28`
-`董晓算法 B 搜索：P11`
-`董晓算法 C 数据结构：P`
-`董晓算法 D 图论：P2`
-`董晓算法 E 动态规划：P32`
-`董晓算法 F 字符串：P8`
-`董晓算法 G 数学：P8`
 
 ## 一、基础算法
 
@@ -1793,7 +1786,7 @@ int main() {
 ## 三、字符串
 
 
-### 字符串哈希Hash
+### 字符串Hash
 
 
 
@@ -1911,7 +1904,7 @@ cout << H.query(1,1,2,2) << "\n";
 把一个东西转换成一个大整数，这样比较两个东西是否相等的就只要比较两个整数是否相等就行了
 
 
-### 字典树
+### 字典树Trie
 
 
 #### 普通字典树
@@ -2296,6 +2289,264 @@ t = ^#a#b#b#a#$
 
 
 
+### AC自动机
+```cpp
+class AhoCorasick {
+private:
+    // 节点结构体（内部封装）
+    struct Node {
+        int son[26];
+        int fail;
+        int cnt;
+
+        Node() {
+            std::memset(son, 0, sizeof(son));
+            fail = 0;
+            cnt = 0;
+        }
+    };
+
+    vector<Node> tr;  // 动态数组，更现代、更安全
+    int root;
+
+public:
+    // 构造函数：初始化根节点
+    AhoCorasick() {
+        tr.emplace_back();
+        root = 0;
+    }
+
+    // 插入模式串
+    void insert(const string& s) {
+        int p = root;
+        for (char ch : s) {
+            int u = ch - 'a';
+            if (!tr[p].son[u]) {
+                tr.emplace_back();
+                tr[p].son[u] = tr.size() - 1;
+            }
+            p = tr[p].son[u];
+        }
+        tr[p].cnt++;
+    }
+
+    // 构建失配指针
+    void build() {
+        queue<int> q;
+
+        for (int i = 0; i < 26; ++i) {
+            if (tr[root].son[i]) {
+                q.push(tr[root].son[i]);
+            }
+        }
+
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+
+            for (int i = 0; i < 26; ++i) {
+                int v = tr[u].son[i];
+                if (v) {
+                    tr[v].fail = tr[tr[u].fail].son[i];
+                    q.push(v);
+                } else {
+                    tr[u].son[i] = tr[tr[u].fail].son[i];
+                }
+            }
+        }
+    }
+
+    // 匹配主串，返回匹配总数
+    int query(const string& s) {
+        int p = root;
+        int res = 0;
+        for (char ch : s) {
+            int u = ch - 'a';
+            p = tr[p].son[u];
+
+            for (int t = p; t && tr[t].cnt != -1; t = tr[t].fail) {
+                res += tr[t].cnt;
+                tr[t].cnt = -1;
+            }
+        }
+        return res;
+    }
+
+    // 清空（多组数据用）
+    void clear() {
+        tr.clear();
+        tr.emplace_back();
+    }
+};
+
+// 测试示例
+int main() {
+    AhoCorasick ac;
+
+    int n;
+    cin >> n;
+    while (n--) {
+        string s;
+        cin >> s;
+        ac.insert(s);
+    }
+
+    ac.build();
+
+    string text;
+    cin >> text;
+    cout << ac.query(text) << endl;
+
+    return 0;
+}
+```
+
+多模式串匹配（Trie + KMP）
+
+
+
+
+
+
+
+### 后缀数组SA
+```cpp
+class SuffixArray {
+private:
+    string s;
+    int n;
+    /**
+        sa[i]：排名第 i 的后缀起点
+        rk[i]：从 i 开始的后缀排名
+        height[i]：相邻后缀的 LCP
+    */
+    vector<int> sa, rk, old_rk, height;
+
+    // 比较函数
+    bool cmp(int x, int y, int k) { // 用 rank 替代字符串排序值
+        if (old_rk[x] != old_rk[y]) return old_rk[x] < old_rk[y];
+        int rx = (x + k < n) ? old_rk[x + k] : -1;
+        int ry = (y + k < n) ? old_rk[y + k] : -1;
+        return rx < ry;
+    }
+
+    void build_sa() {
+        n = s.size();
+        sa.resize(n);
+        rk.resize(n);
+        old_rk.resize(n);
+
+        // 初始化
+        for (int i = 0; i < n; ++i) {
+            sa[i] = i;
+            rk[i] = s[i]; // 更新rank，只看第 1 个字符排序
+        }
+
+        // 倍增（利用长度k排名，求2k长度排名 的排序）
+        for (int k = 1; k < n; k <<= 1) { // 把比较长度从 k → 2k
+            old_rk = rk; // old_rk[i] = “下标 i 长度 k 的排名”
+
+            sort(sa.begin(), sa.end(), [&](int x, int y) { // 后缀数组按字典序排序， (s[x ... x+2k-1]) 和 (s[y ... y+2k-1])，下标i开始长度2k的排序（倍增：利用之前长度k的排序）
+                return cmp(x, y, k);
+            });
+
+            rk[sa[0]] = 0; // 排名第一
+            int p = 0;
+
+            for (int i = 1; i < n; ++i) {
+                if (cmp(sa[i - 1], sa[i], k)) // 当前后缀 和 前一个后缀 是否不同
+                    ++p;
+                rk[sa[i]] = p;
+            }
+
+            if (p == n - 1) break; // 所有排名唯一（所有后缀排名都不同 → 已完全排序）
+        }
+    }
+
+    void build_height() {
+        height.resize(n);
+        int k = 0; // 当前 LCP 长度
+
+        for (int i = 0; i < n; ++i) { // 遍历每一个下标
+            if (rk[i] == 0) {
+                height[0] = 0;
+                continue;
+            }
+
+            int j = sa[rk[i] - 1];
+
+            while (i + k < n && j + k < n && s[i + k] == s[j + k]) {
+                ++k;
+            }
+
+            height[rk[i]] = k;
+
+            if (k) --k; // LCP(i+1, j+1) ≥ LCP(i, j) - 1（两个字符串都往右移一位，公共前缀最多少 1）
+        }
+    }
+
+public:
+    SuffixArray(const string& str) : s(str) {
+        build_sa();
+        build_height();
+    }
+
+    vector<int> get_sa() { return sa; }
+    vector<int> get_rk() { return rk; }
+    vector<int> get_height() { return height; }
+
+    // 最长重复子串 max(height[i])（重复子串 = 相邻后缀的公共前缀）
+    int max_repeat() {
+        int res = 0;
+        for (int i = 1; i < n; ++i) {
+            res = max(res, height[i]);
+        }
+        return res;
+    }
+
+    // 不同子串个数 n*(n+1)/2 - sum(height) （所有子串数(等差数列) = n*(n+1)/2，减去重复部分（height））
+    long long distinct_substring() {
+        long long ans = 1LL * n * (n + 1) / 2;
+        for (int i = 1; i < n; ++i) {
+            ans -= height[i];
+        }
+        return ans;
+    }
+
+    // 暴力 LCP 查询（O(n)，比赛慎用多次，多次查询可用线段树优化）min(height[l+1 ... r])（SA中区间的最小 height 就是任意两后缀的 LCP，因为是按字典序排的序，所以如果有很长的公告前缀，那么总会在相邻排序中体现出来（有点像结论推条件））
+    int lcp(int x, int y) {
+        if (x == y) return n - x;
+        int l = rk[x], r = rk[y];
+        if (l > r) swap(l, r);
+
+        int res = INT_MAX;
+        for (int i = l + 1; i <= r; ++i) {
+            res = min(res, height[i]);
+        }
+        return res;
+    }
+};
+```
+
+后缀数组SA核心：
+1. `sa[i]`：排名为 i 的后缀，在原串中的起始下标
+2. `rk[i]`：原串下标 i 开始的后缀，在所有后缀中的排名,互逆关系：`sa[rk[i]]=i,rk[sa[i]]=i`，rk最小排名是0
+3. `height[i]`：排名第 i的后缀 和 排名第 i−1的后缀 的最长公共前缀长度，`height[0]=0`
+
+
+后缀数组SA常见题型：
+- 任意两个后缀的最长公共前缀 LCP（核心）
+- 求字符串最长重复子串（出现至少两次）
+- 求字符串本质不同子串总数（最经典题）
+- 子串最长公共部分、子串比较、字典序最小后缀
+- 拼接串问题、循环同构最小表示
+- 二分答案 + height 分组判定
+
+
+
+### 后缀自动机SAM
+
+
 ## 四、动态规划
 
 状态转移方程
@@ -2305,17 +2556,6 @@ DP的步骤：
 2. 确定转移方程（递推关系）
 3. 确定边界条件
 4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-4. 确定递推顺序
-
 
 ### 线性DP
 
@@ -4538,8 +4778,8 @@ int exgcd(int a, int b, int &x, int &y) {
 }
 ```
 
-对任意整数 a, b，存在整数 x, y，使得`ax + by = gcd(a, b)`
 扩展欧几里得
+对任意整数 a, b，存在整数 x, y，使得`ax + by = gcd(a, b)`
 
 解`ax + by = gcd(a, b)`
 ![扩展欧几里得算法](.assets/扩展欧几里得算法.png)
@@ -4687,9 +4927,81 @@ long long phi(long long n) {
 `a^φ(m) ≡ 1 (mod m)，gcd(a,m)=1`
 
 
+
+#### 莫尼乌斯函数
+
+
+
+
 #### 中国剩余定理
 
 
+#### 数论分块
+
+
+
+
+
+### 组合数学
+
+#### 大组合数求模
+```c++
+using ll = long long;
+const int N = 2e5 + 10;
+const int MOD = 1e9 + 7;
+
+ll fac[N], inv[N];
+
+// 快速幂
+ll qpow(ll a, ll b) {
+    ll res = 1;
+    while (b) {
+        if (b & 1) res = res * a % MOD;
+        a = a * a % MOD;
+        b >>= 1;
+    }
+    return res;
+}
+
+// 初始化阶乘和逆元
+// fac[i] = i! mod 1e9+7
+// inv[i] = i!^-1 mod 1e9+7
+void init() {
+    fac[0] = 1;
+    for (int i = 1; i < N; ++i)
+        fac[i] = fac[i - 1] * i % MOD;
+    inv[N - 1] = qpow(fac[N - 1], MOD - 2);
+    for (int i = N - 2; i >= 0; --i)
+        inv[i] = inv[i + 1] * (i + 1) % MOD;
+}
+
+// C(n, k) = fac[n] * inv[k] * inv[n-k]
+ll C(int n, int k) {
+    if (k < 0 || k > n) return 0;
+    return fac[n] * inv[k] % MOD * inv[n - k] % MOD;
+}
+```
+
+![大组合数求模逆元](.assets/大组合数求模逆元.png)
+![逆元递推](.assets/逆元递推.png)
+
+
+
+#### 容斥定理
+#### 鸽巢原理
+#### 卡特兰数
+#### 斯特林数
+
+
+#### 生成函数
+
+#### 多项式
+
+
+##### FFT
+
+
+##### NTT
 
 ### 线性代数
 
@@ -4745,60 +5057,15 @@ public:
 };
 ```
 
-
-### 组合数学
-
-#### 大组合数求模
-```c++
-using ll = long long;
-const int N = 2e5 + 10;
-const int MOD = 1e9 + 7;
-
-ll fac[N], inv[N];
-
-// 快速幂
-ll qpow(ll a, ll b) {
-    ll res = 1;
-    while (b) {
-        if (b & 1) res = res * a % MOD;
-        a = a * a % MOD;
-        b >>= 1;
-    }
-    return res;
-}
-
-// 初始化阶乘和逆元
-// fac[i] = i! mod 1e9+7
-// inv[i] = i!^-1 mod 1e9+7
-void init() {
-    fac[0] = 1;
-    for (int i = 1; i < N; ++i)
-        fac[i] = fac[i - 1] * i % MOD;
-    inv[N - 1] = qpow(fac[N - 1], MOD - 2);
-    for (int i = N - 2; i >= 0; --i)
-        inv[i] = inv[i + 1] * (i + 1) % MOD;
-}
-
-// C(n, k) = fac[n] * inv[k] * inv[n-k]
-ll C(int n, int k) {
-    if (k < 0 || k > n) return 0;
-    return fac[n] * inv[k] % MOD * inv[n - k] % MOD;
-}
-```
-
-![大组合数求模逆元](.assets/大组合数求模逆元.png)
-![逆元递推](.assets/逆元递推.png)
+#### 高斯消元法
 
 
 
-#### 多项式
+### 博弈论
 
-
-##### FFT
-
-
-##### NTT
-
+#### 巴什博奕 Bash
+#### 尼姆博弈 Nim
+#### SG 函数
 
 
 
@@ -4810,7 +5077,7 @@ ll C(int n, int k) {
 ### 概率论
 
 
-### 博弈论
+
 
 
 
