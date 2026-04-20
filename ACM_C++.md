@@ -2528,7 +2528,7 @@ public:
 };
 ```
 
-后缀数组SA核心：
+后缀数组SA核心：把所有后缀字符串取出来安装字典序排序
 1. `sa[i]`：排名为 i 的后缀，在原串中的起始下标
 2. `rk[i]`：原串下标 i 开始的后缀，在所有后缀中的排名,互逆关系：`sa[rk[i]]=i,rk[sa[i]]=i`，rk最小排名是0
 3. `height[i]`：排名第 i的后缀 和 排名第 i−1的后缀 的最长公共前缀长度，`height[0]=0`
@@ -4753,6 +4753,8 @@ int maxMatch = dinic.maxflow(S, T);
 - 逆元：
 
 
+
+
 #### GCD 
 ```c++
 int gcd(int a, int b) {
@@ -4761,6 +4763,13 @@ int gcd(int a, int b) {
 ```
 
 欧几里得算法、最大公约数
+$$
+\gcd(a,b) = \max \{ d \mid d \mid a, d \mid b \} \\
+\mathrm{lcm}(a,b) = \min \{ m \mid a \mid m, b \mid m \} \\
+\gcd(a,b) \cdot \mathrm{lcm}(a,b) = a \cdot b
+$$
+
+
 
 
 
@@ -4779,10 +4788,21 @@ int exgcd(int a, int b, int &x, int &y) {
 ```
 
 扩展欧几里得
+$$
+ax + by = \gcd(a,b) \\
+ax \equiv c \pmod m \;\Longleftrightarrow\; ax + my = c
+$$
+
+
 对任意整数 a, b，存在整数 x, y，使得`ax + by = gcd(a, b)`
 
 解`ax + by = gcd(a, b)`
 ![扩展欧几里得算法](.assets/扩展欧几里得算法.png)
+
+
+
+
+
 
 
 #### 素数
@@ -4828,6 +4848,17 @@ vector<pair<long long,int>> factor(long long n) {
 }
 
 ```
+
+
+###### 唯一分解定理
+
+$$
+n = \prod_{i=1}^k p_i^{a_i}
+$$
+
+约数个数：$d(n) = \prod_{i=1}^k (a_i + 1)$ 
+
+约数和：$\sigma(n) = \prod_{i=1}^k \frac{p_i^{a_i+1}-1}{p_i-1}$
 
 
 ##### 素数筛
@@ -4883,8 +4914,31 @@ void euler_sieve(int n) {
 保证每个合数只被最小质因子筛一次
 
 
+#### 整除
+$$
+a \mid b \iff \exists k \in \mathbb{Z},\; b = ak
+$$
 
-#### 模逆元
+
+#### 同余
+
+$$
+a \equiv b \pmod m \iff m \mid (a-b) \\
+$$
+
+同余性质：
+$$
+a \equiv b,\; c \equiv d \pmod m
+\Rightarrow a+c \equiv b+d \pmod m \\ 
+a \equiv b,\; c \equiv d \pmod m
+\Rightarrow ac \equiv bd \pmod m \\
+a \equiv b \pmod m \Rightarrow a^k \equiv b^k \pmod m
+$$
+
+
+
+
+##### 模逆元
 ```cpp
 long long inv(long long a, long long mod) {
     long long x, y;
@@ -4895,7 +4949,20 @@ long long inv(long long a, long long mod) {
 ```
 
 
+模逆元：$a \cdot a^{-1} \equiv 1 \pmod m \text{ 存在条件：} gcd(a,m)=1$
+
+
+
 ##### 费马小定理
+
+
+$$
+a^{m-1} \equiv 1 \pmod m
+$$
+
+$$
+a^{-1} \equiv a^{m-2} \pmod m
+$$
 
 `a^(p-1) ≡ 1 (mod p)`（模是质数）
 
@@ -4903,7 +4970,18 @@ long long inv(long long a, long long mod) {
 ![费马小定理求逆元](.assets/费马小定理求逆元.png)
 
 
-##### 扩展欧几里得法
+##### 欧拉定理
+`a^φ(m) ≡ 1 (mod m)，gcd(a,m)=1`
+
+$$
+a^{\varphi(m)} \equiv 1 \pmod m
+$$
+
+$$
+a^{-1} \equiv a^{\varphi(m)-1} \pmod m
+$$
+
+
 
 
 #### 欧拉函数
@@ -4922,9 +5000,24 @@ long long phi(long long n) {
 ```
 
 
+$$
+\varphi(n) = |\{1 \le k \le n \mid \gcd(k,n)=1\}|
+$$
 
-##### 欧拉定理
-`a^φ(m) ≡ 1 (mod m)，gcd(a,m)=1`
+若
+
+$$
+n = \prod p_i^{a_i}
+$$
+
+则
+
+$$
+\varphi(n) = n \prod_{p_i \mid n}\left(1 - \frac{1}{p_i}\right)
+$$
+
+
+
 
 
 
