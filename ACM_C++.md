@@ -1786,6 +1786,31 @@ int main() {
 ## 三、字符串
 
 
+### 字符串最小表示法
+```cpp
+int getMinRotation(string s) {
+    int n = s.size();
+    string t = s + s;
+    int i = 0, j = 1, k = 0;
+
+    while (i < n && j < n && k < n) {
+        if (t[i + k] == t[j + k]) k++;
+        else if (t[i + k] > t[j + k]) {
+            i = i + k + 1;
+            if (i == j) i++;
+            k = 0;
+        } else {
+            j = j + k + 1;
+            if (i == j) j++;
+            k = 0;
+        }
+    }
+    return min(i, j);
+}
+```
+
+循环左移的最小字典序
+
 ### 字符串Hash
 
 
