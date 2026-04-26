@@ -122,10 +122,11 @@ class BigInt:
 
 python自带大数运算
 
+### 数组
 
-### 排序
+#### 排序
 
-#### 选择排序 
+##### 选择排序 
 ```python
 def selection_sort(arr):
     n = len(arr)
@@ -141,7 +142,7 @@ def selection_sort(arr):
 每次向后寻找最小的，然后和当前交换
 
 
-#### 冒泡排序
+##### 冒泡排序
 ```python
 def bubble_sort(arr):
     n = len(arr)
@@ -158,7 +159,7 @@ def bubble_sort(arr):
 
 
 
-#### 快速排序
+##### 快速排序
 ```python
 def quick_sort(arr: List[int]):
     if len(arr) <= 1:
@@ -177,7 +178,7 @@ def quick_sort(arr: List[int]):
 
 
 
-#### 归并排序
+##### 归并排序
 ```python
 def merge_sort(arr):
     if len(arr) <= 1:
@@ -205,7 +206,7 @@ def merge_sort(arr):
 直接分治然后合并
 
 
-#### 堆排序
+##### 堆排序
 ```python
 import heapq
 
@@ -216,7 +217,7 @@ def heap_sort(arr):
 
 
 
-#### 桶排序
+##### 桶排序
 ```python
 def bucket_sort(arr, bucket_size=5):
     if len(arr) == 0:
@@ -242,7 +243,34 @@ def bucket_sort(arr, bucket_size=5):
 分块排序
 
 
+#### 连续非递增区间
+```python
+def get_long_non_increasing(arr):
+    if len(arr) < 2:
+        return []
+    
+    result = []  # 存放 (start_idx, end_idx)
+    n = len(arr)
+    start = None
 
+    for i in range(n - 1):
+        # 当前 >= 下一个：属于非递增
+        if arr[i] >= arr[i + 1]:
+            if start is None:
+                start = i  # 标记区间开始
+        
+        # 不满足：结束当前区间
+        else:
+            if start is not None:
+                result.append( (start, i) )  # 只存下标
+                start = None
+
+    # 最后一段
+    if start is not None:
+        result.append( (start, n-1) )  # 只存下标
+
+    return result
+```
 
 ### 搜索
 
@@ -629,9 +657,17 @@ def jump_by_power(arr, start, steps):
 
 ### 离散化
 ```python
-coords = sorted(set(original_values))
-comp = {v:i for i,v in enumerate(coords)}
-# 现在 comp[x] 即为 x 的离散化下标  
+def compress(values: list[int]):
+    """
+    离散化函数：输入任意整数/浮点数列表，返回 离散化字典 + 离散化后的值
+    返回：compressor, ranks
+        compressor: {原始值: 离散化下标(从1开始)}
+        ranks: 每个元素离散化后的下标
+    """
+    coords = sorted(set(values))
+    comp = {v: i + 1 for i, v in enumerate(coords)}  # 树状数组习惯从 1 开始
+    ranks = [comp[x] for x in values]
+    return comp, ranks
 ```
 
 
@@ -1378,6 +1414,29 @@ class BIT:
     def range_query(self, l, r):
         """查询区间 [l, r] 的和"""
         return self.query(r) - self.query(l - 1)
+```
+
+#### 单点修改 & 前缀区间最值
+```python
+class BIT:
+    def __init__(self, n):
+        """
+        索引范围：1~n
+        """
+        self.n = n
+        self.tree = [float('-inf')] * (n + 1)
+
+    def update(self, i, val):
+        while i <= self.n:
+            self.tree[i] = max(self.tree[i], val)
+            i += i & -i
+
+    def query(self, i):
+        res = float('-inf')
+        while i > 0:
+            res = max(res, self.tree[i])
+            i -= i & -i
+        return res
 ```
 
 #### 二维树状数组

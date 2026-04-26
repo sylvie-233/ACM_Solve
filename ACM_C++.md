@@ -331,7 +331,9 @@ string div(string a, int b, int &r) {
 ```
 
 
-### 排序
+### 数组
+
+#### 排序
 ```cpp
 namespace Sorting {
 
@@ -460,33 +462,68 @@ Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 ```
 
 
-#### 冒泡排序
-#### 选择排序
-#### 快速排序
+##### 冒泡排序
+##### 选择排序
+##### 快速排序
 
 ![快速排序](./.assets/快速排序.png)
 二分思想、基于中位点左右分治
 
-##### 第k小的数
+###### 第k小的数
 
 ![快速排序第k小的数](./.assets/快速排序第k小的数.png)
 基于快速排序中位点的索引判断左边个数是否为第k个
 
-#### 归并排序
+##### 归并排序
 
 ![归并排序](./.assets/归并排序.png)
 二分思想、最后合并
 
-##### 逆序对
+###### 逆序对
 
 当归并排序从右侧子序列取元素时统计剩余逆序个数
 
-#### 堆排序
+##### 堆排序
 
-#### 区间合并
+###### 区间合并
 
 左右端点排序
 
+
+
+#### 连续非递增区间
+```cpp
+vector<pair<int,int>> get_long_non_increasing(const vector<int>& arr) {
+    vector<pair<int,int>> res;
+    int n = arr.size();
+    if (n < 2) return res;
+
+    int start = -1;
+
+    for (int i = 0; i < n - 1; ++i) {
+        // 当前 >= 下一个：非递增
+        if (arr[i] >= arr[i + 1]) {
+            if (start == -1) {
+                start = i;
+            }
+        }
+        // 不满足，结束区间
+        else {
+            if (start != -1) {
+                res.emplace_back(start, i);
+                start = -1;
+            }
+        }
+    }
+
+    // 处理最后一段
+    if (start != -1) {
+        res.emplace_back(start, n - 1);
+    }
+
+    return res;
+}
+```
 
 
 ### 离散化
@@ -1481,6 +1518,9 @@ ST 表（Sparse Table，稀疏表）是用于解决 可重复贡献问题 的数
 ![树状数组结构](.assets/树状数组结构.png)
 
 
+- 树状数组只能处理前缀问题
+
+
 #### 单点修改 区间求和
 ```c++
 class BIT {
@@ -1553,10 +1593,241 @@ bit.update(5, 100); // a[5] = 100
 
 
 
+#### 单点修改 前缀区间最值
+```cpp
+class BIT {
+private:
+    int n;
+    vector<long long> tree;
+
+    static int lowbit(int x) {
+        return x & -x;
+    }
+
+public:
+    // 构造：给定大小 n，初始为 0
+    BIT(int n) : n(n), tree(n + 1, 0) {}
+
+    // 构造：从数组直接建树 O(n)
+    BIT(const vector<long long> &a) : n(a.size()), tree(a.size() + 1, 0) {
+        for (int i = 1; i <= n; ++i) {
+            tree[i] = a[i - 1];
+            int j = i + lowbit(i);
+            if (j <= n) 
+                tree[j] = max(tree[j], tree[i]);
+        }
+    }
+
+    // 单点修改：把 a[x] 更新为 max(当前值, v)
+    // 注意：最大值树状数组只支持「更新成更大的值」，不支持任意赋值
+    void update(int x, long long v) {
+        assert(x >= 1 && x <= n);
+        while (x <= n) {
+            if (tree[x] >= v) break;  // 剪枝优化
+            tree[x] = v;
+            x += lowbit(x);
+        }
+    }
+
+    // 查询前缀最大值：max(1..x)
+    long long query(int x) const {
+        assert(x >= 0 && x <= n);
+        long long res = 0;
+        while (x > 0) {
+            res = max(res, tree[x]);
+            x -= lowbit(x);
+        }
+        return res;
+    }
+};
+
+vector<long long> a = {1, 2, 3, 4, 5};
+BIT bit(a);
+
+cout << bit.query(3) << "\n";    // max(1,2,3) = 3
+cout << bit.query(5) << "\n";    // max(1-5) = 5
+
+bit.update(3, 10);               // 把 3 改成 10
+cout << bit.query(5) << "\n";    // max 变成 10
+
+bit.update(5, 100);              // 把 5 改成 100
+cout << bit.query(5) << "\n";    // max 变成 100
+```
 
 
 ### 线段树
 
+
+#### 单点修改 区间求和
+```cpp
+class SegTree {
+private:
+    struct Node {
+        ll sum = 0;     // 区间和
+    };
+
+    int n;
+    vector<Node> tr;
+
+    // 向上合并：子节点更新父节点
+    inline void pushup(int p) {
+        tr[p].sum = tr[p<<1].sum + tr[p<<1|1].sum;
+    }
+
+    // 建树
+    void build(int p, int l, int r, const vector<ll>& a) {
+        if (l == r) {
+            tr[p].sum = a[l];
+            return;
+        }
+        int mid = (l + r) >> 1;
+        build(p<<1, l, mid, a);
+        build(p<<1|1, mid+1, r, a);
+        pushup(p);
+    }
+
+    // 单点修改：把 pos 位置设为 val
+    void update(int p, int l, int r, int pos, ll val) {
+        if (l == r) {
+            tr[p].sum = val;
+            return;
+        }
+        int mid = (l + r) >> 1;
+        if (pos <= mid) update(p<<1, l, mid, pos, val);
+        else update(p<<1|1, mid+1, r, pos, val);
+        pushup(p);
+    }
+
+    // 区间查询 [L, R]
+    ll query(int p, int l, int r, int L, int R) {
+        if (L <= l && r <= R) return tr[p].sum;
+        int mid = (l + r) >> 1;
+        ll res = 0;
+        if (L <= mid) res += query(p<<1, l, mid, L, R);
+        if (R > mid) res += query(p<<1|1, mid+1, r, L, R);
+        return res;
+    }
+
+public:
+    // 指定大小初始化，全 0
+    SegTree(int n) : n(n) {
+        tr.assign(4 * n + 5, Node());
+    }
+
+    // 从数组构建（必须 1-based）
+    SegTree(const vector<ll>& a) {
+        n = a.size() - 1;
+        tr.assign(4 * n + 5, Node());
+        build(1, 1, n, a);
+    }
+
+    // 单点修改：把 pos 设为 val
+    void set(int pos, ll val) {
+        update(1, 1, n, pos, val);
+    }
+
+    // 查询区间 [L, R] 的和
+    ll rangeQuery(int L, int R) {
+        return query(1, 1, n, L, R);
+    }
+};
+
+vector<ll> a = {0, 1, 2, 3, 4, 5};  // 1-based
+SegTree st(a);
+
+cout << st.rangeQuery(2, 4) << endl;  // 2+3+4 = 9
+st.set(3, 10);                        // 把 3 改成 10
+cout << st.rangeQuery(1, 5) << endl;  // 1+2+10+4+5 = 22
+st.set(5, 100);                       // 把 5 改成 100
+cout << st.rangeQuery(1, 5) << endl;  // 1+2+10+4+100 = 117
+```
+
+
+#### 单点修改 区间最值
+```cpp
+class SegTree {
+private:
+    struct Node {
+        ll max_val = -1e18;  // 区间最大值
+    };
+
+    int n;
+    vector<Node> tr;
+
+    // 向上更新：取左右儿子最大值
+    inline void pushup(int p) {
+        tr[p].max_val = max(tr[p<<1].max_val, tr[p<<1|1].max_val);
+    }
+
+    // 建树
+    void build(int p, int l, int r, const vector<ll>& a) {
+        if (l == r) {
+            tr[p].max_val = a[l];
+            return;
+        }
+        int mid = (l + r) >> 1;
+        build(p<<1, l, mid, a);
+        build(p<<1|1, mid+1, r, a);
+        pushup(p);
+    }
+
+    // 单点修改：把 pos 改成 val
+    void update(int p, int l, int r, int pos, ll val) {
+        if (l == r) {
+            tr[p].max_val = val;
+            return;
+        }
+        int mid = (l + r) >> 1;
+        if (pos <= mid) update(p<<1, l, mid, pos, val);
+        else update(p<<1|1, mid+1, r, pos, val);
+        pushup(p);
+    }
+
+    // 区间查询最大值 [L, R]
+    ll query(int p, int l, int r, int L, int R) {
+        if (L <= l && r <= R) {
+            return tr[p].max_val;
+        }
+        int mid = (l + r) >> 1;
+        ll res = -1e18;
+        if (L <= mid) res = max(res, query(p<<1, l, mid, L, R));
+        if (R > mid) res = max(res, query(p<<1|1, mid+1, r, L, R));
+        return res;
+    }
+
+public:
+    // 指定大小，初始化为 -INF
+    SegTree(int n) : n(n) {
+        tr.assign(4 * n + 5, Node());
+    }
+
+    // 从数组建树（数组必须 1-based）
+    SegTree(const vector<ll>& a) {
+        n = a.size() - 1;
+        tr.assign(4 * n + 5, Node());
+        build(1, 1, n, a);
+    }
+
+    // 单点修改：把 pos 位置设为 val
+    void set(int pos, ll val) {
+        update(1, 1, n, pos, val);
+    }
+
+    // 查询区间 [L, R] 的最大值
+    ll rangeQuery(int L, int R) {
+        return query(1, 1, n, L, R);
+    }
+};
+
+vector<ll> a = {0, 1, 2, 3, 4, 5};  // 1-based
+SegTree st(a);
+
+cout << st.rangeQuery(2, 4) << endl;  // max(2,3,4) = 4
+st.set(3, 10);                        // 把 3 改成 10
+cout << st.rangeQuery(1, 5) << endl;  // max(1,2,10,4,5) = 10
+st.set(5, 100);                      // 把 5 改成 100
+cout << st.rangeQuery(1, 5) << endl;  // 100
+```
 
 
 #### 区间修改 区间求和
