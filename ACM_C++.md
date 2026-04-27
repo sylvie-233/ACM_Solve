@@ -2841,6 +2841,154 @@ public:
 
 
 ### 后缀自动机SAM
+```cpp
+struct SAM {
+    static const int ALPHABET = 26;
+
+    /**
+     每个节点代表一个等价类：一组 endpos 相同的子串
+     */
+    struct Node {
+        int next[ALPHABET]; // 转移边：next[c] = 走字符 c 到达的节点
+        int link;           // 后缀链接（fail 指针）
+        int len;            // 该等价类中最长子串的长度
+        long long occ;      // endpos 大小 = 子串出现次数
+
+        Node() {
+            memset(next, -1, sizeof next);
+            link = -1;
+            len = 0;
+            occ = 0;
+        }
+    };
+
+    vector<Node> st;
+    int last; // 当前最后一个状态
+
+    SAM(int max_len = 100000) {
+        st.reserve(2 * max_len);    // SAM 节点数 ≤ 2n
+        st.push_back(Node());       // 0 号节点 = 根节点（空串）
+        last = 0;
+    }
+
+    // 插入一个字符
+    void extend(char ch) {
+        int c = ch - 'a';
+        int cur = st.size();
+        st.push_back(Node());
+        st[cur].len = st[last].len + 1;
+        st[cur].occ = 1;
+
+        int p = last;
+        while (p != -1 && st[p].next[c] == -1) {
+            st[p].next[c] = cur;
+            p = st[p].link; // fail指针回跳
+        }
+
+        if (p == -1) {
+            st[cur].link = 0;
+        } else {
+            int q = st[p].next[c];
+            if (st[p].len + 1 == st[q].len) {
+                st[cur].link = q;
+            } else {
+                // 克隆节点
+                int clone = st.size();
+                st.push_back(st[q]);
+                st[clone].len = st[p].len + 1;
+                st[clone].occ = 0; // 注意！
+
+                while (p != -1 && st[p].next[c] == q) {
+                    st[p].next[c] = clone;
+                    p = st[p].link;
+                }
+
+                st[q].link = st[cur].link = clone;
+            }
+        }
+
+        last = cur;
+    }
+
+    // 构建
+    void build(const string &s) {
+        for (char c : s) extend(c);
+    }
+
+    // 统计每个状态的出现次数（endpos）
+    void calc_occ() {
+        int sz = st.size();
+        vector<int> cnt(sz), order(sz);
+
+        int max_len = 0;
+        for (auto &node : st) max_len = max(max_len, node.len);
+
+        vector<int> bucket(max_len + 1);
+        for (auto &node : st) bucket[node.len]++;
+
+        for (int i = 1; i <= max_len; i++) bucket[i] += bucket[i - 1];
+
+        for (int i = sz - 1; i >= 0; i--) {
+            order[--bucket[st[i].len]] = i;
+        }
+
+        // 按 len 从大到小拓扑
+        for (int i = sz - 1; i > 0; i--) {
+            int u = order[i];
+            int fa = st[u].link;
+            if (fa != -1)
+                st[fa].occ += st[u].occ;
+        }
+    }
+
+    // 不同子串数量
+    long long distinct_substring_count() {
+        long long ans = 0;
+        for (int i = 1; i < (int)st.size(); i++) {
+            ans += st[i].len - st[st[i].link].len;
+        }
+        return ans;
+    }
+
+    // 查询某个串出现次数
+    long long count_occ(const string &t) {
+        int u = 0;
+        for (char c : t) {
+            int x = c - 'a';
+            if (st[u].next[x] == -1) return 0;
+            u = st[u].next[x];
+        }
+        return st[u].occ;
+    }
+};
+
+SAM sam(n);        // n = 字符串长度
+sam.build(s);      // 构建SAM
+sam.calc_occ();    // 如果要用出现次数，必须调用
+```
+
+后缀自动机（Suffix Automaton, SAM）本质：用一个自动机（DAG）表示一个字符串的所有子串
+
+核心功能：
+- 不同子串数量
+- 任意子串出现次数
+- 最长重复子串
+- 多串公共子串
+- 子串出现位置等
+
+核心原理：
+- `next[c]`：当前状态 + 字符 c → 跳到哪个状态
+- link（后缀链接）: 指向更短的后缀等价类,形成一棵后缀树,是统计出现次数的关键
+- len: 该状态代表的最长子串长度，该状态代表的子串长度范围：`(len(link), len]`
+- occ（出现次数）: 该状态对应的所有子串的出现次数看，只有新建的叶子节点初值为 1，克隆节点为 0
+
+extend构建流程：
+1. 创建新节点 cur，长度 = last.len + 1，occ=1
+2. 沿着后缀链接往上跳，把所有没有 c 转移的 p，都连到 cur
+3. 如果跳到空，cur 的后缀链接指向根
+4. 否则找到 q = p.next [c]
+    - 如果 p.len+1 == q.len → cur.link = q
+    - 否则克隆 q 得到 clone，修正转移和链接
 
 
 ## 四、动态规划
