@@ -5539,6 +5539,97 @@ ll C(int n, int k) {
 
 
 ##### NTT
+```cpp
+class NTT {
+private:
+    // 固定模数与原根 (ACM 最常用配置,模数选用经典 998244353，原根 g=3，逆元 gi=332748118)
+    const int MOD = 998244353;
+    const int G = 3;
+    const int Gi = 332748118;
+
+    // 快速幂 (私有，内部调用)
+    long long qpow(long long a, long long b) {
+        long long res = 1;
+        while (b) {
+            if (b & 1) res = res * a % MOD;
+            a = a * a % MOD;
+            b >>= 1;
+        }
+        return res;
+    }
+
+    // 二进制位反转置换 (私有)
+    void rader(vector<long long>& a, int len) {
+        int j = 0;
+        for (int i = 0; i < len; i++) {
+            if (i < j) swap(a[i], a[j]);
+            int k = len >> 1;
+            for (; j >= k; k >>= 1) j -= k;
+            j += k;
+        }
+    }
+
+    // 核心 NTT 变换 (私有)
+    void ntt_transform(vector<long long>& a, int len, int inv) {
+        rader(a, len);
+        for (int mid = 1; mid < len; mid <<= 1) {
+            long long wn = qpow(inv == 1 ? G : Gi, (MOD - 1) / (mid * 2));
+            for (int j = 0; j < len; j += mid * 2) {
+                long long w = 1;
+                for (int k = 0; k < mid; k++, w = w * wn % MOD) {
+                    long long x = a[j + k];
+                    long long y = w * a[j + k + mid] % MOD;
+                    a[j + k] = (x + y) % MOD;
+                    a[j + k + mid] = (x - y + MOD) % MOD;
+                }
+            }
+        }
+        if (inv == -1) {
+            long long inv_len = qpow(len, MOD - 2);
+            for (int i = 0; i < len; i++)
+                a[i] = a[i] * inv_len % MOD;
+        }
+    }
+
+public:
+    // ✅ 唯一对外接口：多项式乘法 (卷积)
+    vector<long long> multiply(vector<long long> a, vector<long long> b) {
+        int n = a.size(), m = b.size();
+        int len = 1;
+        // 自动扩展到 2 的幂
+        while (len < n + m - 1) len <<= 1;
+        a.resize(len, 0), b.resize(len, 0);
+
+        // 正向变换 → 点乘 → 逆向变换
+        ntt_transform(a, len, 1);
+        ntt_transform(b, len, 1);
+        for (int i = 0; i < len; i++) 
+            a[i] = a[i] * b[i] % MOD;
+        ntt_transform(a, len, -1);
+
+        // 截断到有效长度返回
+        a.resize(n + m - 1);
+        return a;
+    }
+};
+
+
+// 1. 定义 NTT 对象
+NTT ntt;
+
+// 2. 定义两个多项式
+vector<long long> A = {1, 2, 3};  // 1 + 2x + 3x²
+vector<long long> B = {4, 5};      // 4 + 5x
+
+// 3. 一行调用乘法
+vector<long long> ans = ntt.multiply(A, B);
+
+// 输出结果：4 13 22 15
+for (auto x : ans) cout << x << " ";
+```
+
+NTT 本质就是快速算卷积
+
 
 ### 线性代数
 
@@ -5607,7 +5698,270 @@ public:
 
 
 ### 计算几何
+```cpp
+const double eps = 1e-8;
+const double PI = acos(-1.0);
 
+// 符号函数
+inline int sgn(double x) {
+    if (fabs(x) < eps) return 0;
+    return x < 0 ? -1 : 1;
+}
+
+// 点 & 向量 类（封装所有基础运算）
+struct Point {
+    double x, y;
+    Point() : x(0), y(0) {}
+    Point(double _x, double _y) : x(_x), y(_y) {}
+
+    // 运算符重载
+    Point operator+(const Point& b) const { return Point(x + b.x, y + b.y); }
+    Point operator-(const Point& b) const { return Point(x - b.x, y - b.y); }
+    Point operator*(double d) const { return Point(x*d, y*d); }
+    Point operator/(double d) const { return Point(x/d, y/d); }
+
+    bool operator==(const Point& b) const {
+        return sgn(x - b.x) == 0 && sgn(y - b.y) == 0;
+    }
+
+    // 点积
+    double dot(const Point& b) const {
+        return x * b.x + y * b.y;
+    }
+    // 叉积
+    double cross(const Point& b) const {
+        return x * b.y - y * b.x;
+    }
+    // 向量模长
+    double len() const {
+        return sqrt(x*x + y*y);
+    }
+    // 模长平方
+    double len2() const {
+        return x*x + y*y;
+    }
+    // 两点距离
+    double dis(const Point& b) const {
+        return (*this - b).len();
+    }
+    // 旋转 逆时针rad弧度
+    Point rot(double rad) const {
+        return Point(x*cos(rad)-y*sin(rad), x*sin(rad)+y*cos(rad));
+    }
+    // 单位化
+    Point unit() const {
+        return *this / len();
+    }
+};
+
+// 直线 / 线段类
+struct Line {
+    Point s, e;
+    Line() {}
+    Line(Point _s, Point _e) : s(_s), e(_e) {}
+
+    // 直线方向向量
+    Point vec() const { return e - s; }
+
+    // 点到直线距离
+    double disPointToLine(const Point& p) const {
+        return fabs((e-s).cross(p-s)) / (e-s).len();
+    }
+
+    // 点到线段距离
+    double disPointToSeg(const Point& p) const {
+        if (sgn((p-s).dot(e-s)) < 0) return p.dis(s);
+        if (sgn((p-e).dot(s-e)) < 0) return p.dis(e);
+        return disPointToLine(p);
+    }
+
+    // 求垂足
+    Point footPoint(const Point& p) const {
+        double t = (p - s).dot(vec()) / vec().len2();
+        return s + vec() * t;
+    }
+
+    // 判断两线段是否相交
+    bool segIntersect(const Line& b) const {
+        Point a1 = s, a2 = e;
+        Point b1 = b.s, b2 = b.e;
+        double c1 = (a2-a1).cross(b1-a1);
+        double c2 = (a2-a1).cross(b2-a1);
+        double c3 = (b2-b1).cross(a1-b1);
+        double c4 = (b2-b1).cross(a2-b1);
+        return sgn(c1)*sgn(c2) < 0 && sgn(c3)*sgn(c4) < 0;
+    }
+
+    // 求两直线交点（确保不平行）
+    Point lineIntersect(const Line& b) const {
+        double c1 = vec().cross(b.s - s);
+        double c2 = vec().cross(b.e - s);
+        return (b.s*c2 - b.e*c1) / (c2 - c1);
+    }
+};
+
+// 多边形工具类（全部静态封装，直接调用）
+struct Polygon {
+    // 多边形面积 顺时针/逆时针都可
+    static double area(const vector<Point>& p) {
+        double res = 0;
+        int n = p.size();
+        for (int i = 0; i < n; i++) {
+            int j = (i+1) % n;
+            res += p[i].x * p[j].y - p[j].x * p[i].y;
+        }
+        return fabs(res) / 2.0;
+    }
+
+    // 点是否在多边形内 0外部 1内部 2边上
+    static int pointInPoly(const vector<Point>& poly, Point p) {
+        int n = poly.size();
+        bool flag = false;
+        for (int i = 0; i < n; i++) {
+            int j = (i+1) % n;
+            Line seg(poly[i], poly[j]);
+            if (sgn(seg.disPointToSeg(p)) == 0) return 2;
+            if (((sgn(poly[i].y-p.y)>0) != (sgn(poly[j].y-p.y)>0))) {
+                double x = ( (p.y-poly[i].y)*(poly[j].x-poly[i].x) ) / (poly[j].y-poly[i].y) + poly[i].x;
+                if (sgn(p.x - x) < 0) flag = !flag;
+            }
+        }
+        return flag ? 1 : 0;
+    }
+};
+
+// 凸包工具类
+struct ConvexHull {
+    // 求凸包 返回逆时针凸包点集
+    static vector<Point> getHull(vector<Point> p) {
+        int n = p.size(), cnt = 0;
+        if (n <= 1) return p;
+        sort(p.begin(), p.end(), [](const Point& a, const Point& b) {
+            return sgn(a.x-b.x) < 0 || (sgn(a.x-b.x)==0 && sgn(a.y-b.y)<0);
+        });
+        vector<Point> stk(n*2);
+        // 下凸壳
+        for (int i = 0; i < n; i++) {
+            while (cnt > 1 && sgn( (stk[cnt-1]-stk[cnt-2]).cross(p[i]-stk[cnt-2]) ) <= 0)
+                cnt--;
+            stk[cnt++] = p[i];
+        }
+        // 上凸壳
+        int lim = cnt;
+        for (int i = n-2; i >= 0; i--) {
+            while (cnt > lim && sgn( (stk[cnt-1]-stk[cnt-2]).cross(p[i]-stk[cnt-2]) ) <= 0)
+                cnt--;
+            stk[cnt++] = p[i];
+        }
+        stk.resize(cnt-1);
+        return stk;
+    }
+};
+
+// ==================== 新增：圆类 Circle ====================
+struct Circle {
+    Point o;
+    double r;
+    Circle() : o(0,0), r(0) {}
+    Circle(Point _o, double _r) : o(_o), r(_r) {}
+
+    // 1. 点和圆的位置关系
+    // 返回：0在圆上 1在圆内 2在圆外
+    int relationPoint(const Point& p) const {
+        double d = o.dis(p);
+        if (sgn(d - r) < 0) return 1;
+        if (sgn(d - r) == 0) return 0;
+        return 2;
+    }
+
+    // 2. 直线与圆交点，返回交点个数，pts存交点
+    int lineCrossCircle(const Line& L, vector<Point>& pts) const {
+        pts.clear();
+        Point p = L.footPoint(o);
+        double d = o.dis(p);
+        int rel = sgn(d - r);
+        if (rel > 0) return 0;
+        if (rel == 0) {
+            pts.push_back(p);
+            return 1;
+        }
+        // 两个交点
+        double len = sqrt(r*r - d*d);
+        Point v = L.vec().unit() * len;
+        pts.push_back(p + v);
+        pts.push_back(p - v);
+        return 2;
+    }
+
+    // 3. 线段与圆交点
+    int segCrossCircle(const Line& L, vector<Point>& pts) const {
+        vector<Point> tmp;
+        int cnt = lineCrossCircle(L, tmp);
+        pts.clear();
+        for (auto& p : tmp) {
+            if (sgn(L.disPointToSeg(p)) == 0)
+                pts.push_back(p);
+        }
+        return pts.size();
+    }
+
+    // 4. 两圆位置关系 + 交点
+    // 返回关系：0重合 1内含 2内切 3相交 4外切 5相离
+    int relationCircle(const Circle& C) const {
+        double d = o.dis(C.o);
+        double r1 = r, r2 = C.r;
+        if (sgn(d) == 0 && sgn(r1 - r2) == 0) return 0;
+        if (sgn(d + min(r1,r2) - max(r1,r2)) < 0) return 1;
+        if (sgn(d + min(r1,r2) - max(r1,r2)) == 0) return 2;
+        if (sgn(d - r1 - r2) < 0) return 3;
+        if (sgn(d - r1 - r2) == 0) return 4;
+        return 5;
+    }
+
+    // 求两圆交点，返回交点个数
+    int circleCrossCircle(const Circle& C, vector<Point>& pts) const {
+        pts.clear();
+        int rel = relationCircle(C);
+        if (rel == 0 || rel == 1 || rel == 5) return 0;
+        double d = o.dis(C.o);
+        double r1 = r, r2 = C.r;
+        double a = (r1*r1 + d*d - r2*r2) / (2*d);
+        double h = sqrt(r1*r1 - a*a);
+        Point mid = o + (C.o - o).unit() * a;
+        Point v = Point(-(C.o-o).y, (C.o-o).x).unit() * h;
+        pts.push_back(mid + v);
+        pts.push_back(mid - v);
+        if (rel == 2 || rel == 4) pts.pop_back();
+        return pts.size();
+    }
+
+    // 5. 过点p作圆切线，返回切点数+切点
+    int tangentPoint(const Point& p, vector<Point>& pts) const {
+        pts.clear();
+        int rel = relationPoint(p);
+        if (rel == 1) return 0;
+        if (rel == 0) {
+            pts.push_back(p);
+            return 1;
+        }
+        // 圆外点两切线
+        double d = o.dis(p);
+        double a = r*r / d;
+        double h = sqrt(r*r - a*a);
+        Point mid = o + (p - o).unit() * a;
+        Point v = Point(-(p-o).y, (p-o).x).unit() * h;
+        pts.push_back(mid + v);
+        pts.push_back(mid - v);
+        return 2;
+    }
+};
+```
+
+计算几何基础：
+- Point点
+- Line线
+- Polygon多边形
+- Circle圆
 
 
 
