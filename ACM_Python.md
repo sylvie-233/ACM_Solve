@@ -682,35 +682,63 @@ def compress(values: list[int]):
 
 ### 偏序
 
-#### 二维偏序问题
+#### 二维偏序
 ```python
-def two_dimensional_partial_order(points: list[tuple[int, int]]) -> int:
-    """
-    二维偏序 通用模板（原生 list + tuple，无需 typing）
-    需求：选出最长子序列满足
-         1. 第一维 严格递增
-         2. 第二维 非递减（<=）
-    时间复杂度：O(n log n)
-    """
-    # 排序：第一维升序，相同第一维 → 第二维降序（保证不重复选）
+# 二维偏序最长偏序序列长度
+# 1. x严格增 < ，y非递减 ≤
+def lis_1(points: list[tuple[int, int]]) -> int:
+    # 同x y降序，避免同x多选
     points.sort(key=lambda p: (p[0], -p[1]))
-
-    # 贪心 + 二分 维护最优非递减序列
     tails: list[int] = []
-
-    for x, y in points:
-        # 找第一个 > y 的位置
+    for _, y in points:
         pos = bisect.bisect_right(tails, y)
-
         if pos == len(tails):
             tails.append(y)
         else:
             tails[pos] = y
-
     return len(tails)
+
+# 2. x严格增 < ，y严格增 <
+def lis_2(points: list[tuple[int, int]]) -> int:
+    points.sort(key=lambda p: (p[0], -p[1]))
+    tails: list[int] = []
+    for _, y in points:
+        pos = bisect.bisect_left(tails, y)
+        if pos == len(tails):
+            tails.append(y)
+        else:
+            tails[pos] = y
+    return len(tails)
+
+# 3. x非递减 ≤ ，y非递减 ≤
+def lis_3(points: list[tuple[int, int]]) -> int:
+    # 同x y升序，允许同x多选
+    points.sort(key=lambda p: (p[0], p[1]))
+    tails: list[int] = []
+    for _, y in points:
+        pos = bisect.bisect_right(tails, y)
+        if pos == len(tails):
+            tails.append(y)
+        else:
+            tails[pos] = y
+    return len(tails)
+
+# 4. x非递减 ≤ ，y严格增 <
+def lis_4(points: list[tuple[int, int]]) -> int:
+    points.sort(key=lambda p: (p[0], p[1]))
+    tails: list[int] = []
+    for _, y in points:
+        pos = bisect.bisect_left(tails, y)
+        if pos == len(tails):
+            tails.append(y)
+        else:
+            tails[pos] = y
+    return len(tails)
+
+    
 ```
 
-求第一维递增，第二维非递减的偏序对个数
+求第一维递增，第二维非递减的最长偏序序列长度
 
 ### 随机算法
 
