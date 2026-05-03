@@ -680,6 +680,38 @@ def compress(values: list[int]):
 
 
 
+### 偏序
+
+#### 二维偏序问题
+```python
+def two_dimensional_partial_order(points: list[tuple[int, int]]) -> int:
+    """
+    二维偏序 通用模板（原生 list + tuple，无需 typing）
+    需求：选出最长子序列满足
+         1. 第一维 严格递增
+         2. 第二维 非递减（<=）
+    时间复杂度：O(n log n)
+    """
+    # 排序：第一维升序，相同第一维 → 第二维降序（保证不重复选）
+    points.sort(key=lambda p: (p[0], -p[1]))
+
+    # 贪心 + 二分 维护最优非递减序列
+    tails: list[int] = []
+
+    for x, y in points:
+        # 找第一个 > y 的位置
+        pos = bisect.bisect_right(tails, y)
+
+        if pos == len(tails):
+            tails.append(y)
+        else:
+            tails[pos] = y
+
+    return len(tails)
+```
+
+求第一维递增，第二维非递减的偏序对个数
+
 ### 随机算法
 
 
