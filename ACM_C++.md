@@ -5964,6 +5964,20 @@ struct Circle {
 - Circle圆
 
 
+#### 多边形面积
+```cpp
+double polygonArea(const vector<Point>& p) {
+    ll res = 0;
+    int n = p.size();
+    for (int i = 0; i < n; ++i) {
+        int j = (i + 1) % n;
+        res += p[i].x * p[j].y - p[j].x * p[i].y;
+    }
+    return fabs(res) / 2.0;
+}
+```
+
+
 
 ### 概率论
 

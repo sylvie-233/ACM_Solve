@@ -686,7 +686,7 @@ def compress(values: list[int]):
 ```python
 # 二维偏序最长偏序序列长度
 # 1. x严格增 < ，y非递减 ≤
-def lis_1(points: list[tuple[int, int]]) -> int:
+def partial_order_2d(points: list[tuple[int, int]]) -> int:
     # 同x y降序，避免同x多选
     points.sort(key=lambda p: (p[0], -p[1]))
     tails: list[int] = []
@@ -699,7 +699,7 @@ def lis_1(points: list[tuple[int, int]]) -> int:
     return len(tails)
 
 # 2. x严格增 < ，y严格增 <
-def lis_2(points: list[tuple[int, int]]) -> int:
+def partial_order_2d(points: list[tuple[int, int]]) -> int:
     points.sort(key=lambda p: (p[0], -p[1]))
     tails: list[int] = []
     for _, y in points:
@@ -711,7 +711,7 @@ def lis_2(points: list[tuple[int, int]]) -> int:
     return len(tails)
 
 # 3. x非递减 ≤ ，y非递减 ≤
-def lis_3(points: list[tuple[int, int]]) -> int:
+def partial_order_2d(points: list[tuple[int, int]]) -> int:
     # 同x y升序，允许同x多选
     points.sort(key=lambda p: (p[0], p[1]))
     tails: list[int] = []
@@ -724,7 +724,7 @@ def lis_3(points: list[tuple[int, int]]) -> int:
     return len(tails)
 
 # 4. x非递减 ≤ ，y严格增 <
-def lis_4(points: list[tuple[int, int]]) -> int:
+def partial_order_2d(points: list[tuple[int, int]]) -> int:
     points.sort(key=lambda p: (p[0], p[1]))
     tails: list[int] = []
     for _, y in points:
