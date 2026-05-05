@@ -17,14 +17,12 @@
 // 类型别名
 using ll = long long;
 using ull = unsigned long long;
-// 内置工具使用使用
-using std::string;
 
 // 输入优化
 std::ios::sync_with_stdio(false);
 std::cin.tie(nullptr);
 std::ifstream fin("in.txt");
-std::istream &in = fin.is_open() ? fin : std::cin;
+std::cin.rdbuf(fin.rdbuf());
 ```
 
 
@@ -334,137 +332,65 @@ string div(string a, int b, int &r) {
 ### 数组
 
 #### 排序
+
+
+##### 冒泡排序
 ```cpp
-namespace Sorting {
-
-    // 冒泡排序模板函数（默认升序）
-    template<typename T>
-    void bubble_sort(T arr[], int n, bool ascending = true) {
-        for (int i = 0; i < n - 1; ++i) {
-            bool swapped = false;
-            for (int j = 0; j < n - i - 1; ++j) {
-                if (ascending ? arr[j] > arr[j + 1] : arr[j] < arr[j + 1]) {
-                    std::swap(arr[j], arr[j + 1]);
-                    swapped = true;
-                }
-            }
-            if (!swapped) break; // 提前退出
-        }
-    }
-
-    // 快速排序
-    template<typename T>
-    int partition(T arr[], int l, int r, bool ascending) {
-        T pivot = arr[r];
-        int i = l - 1;
-        for (int j = l; j < r; ++j) {
-            if (ascending ? arr[j] <= pivot : arr[j] >= pivot) {
-                ++i;
-                std::swap(arr[i], arr[j]);
+// 冒泡排序模板函数（默认升序）
+template<typename T>
+void bubble_sort(T arr[], int n, bool ascending = true) {
+    for (int i = 0; i < n - 1; ++i) {
+        bool swapped = false;
+        for (int j = 0; j < n - i - 1; ++j) {
+            if (ascending ? arr[j] > arr[j + 1] : arr[j] < arr[j + 1]) {
+                std::swap(arr[j], arr[j + 1]);
+                swapped = true;
             }
         }
-        std::swap(arr[i + 1], arr[r]);
-        return i + 1;
+        if (!swapped) break; // 提前退出
     }
-
-    template<typename T>
-    void quick_sort_impl(T arr[], int l, int r, bool ascending) {
-        if (l < r) {
-            int p = partition(arr, l, r, ascending);
-            quick_sort_impl(arr, l, p - 1, ascending);
-            quick_sort_impl(arr, p + 1, r, ascending);
-        }
-    }
-
-    template<typename T>
-    void quick_sort(T arr[], int n, bool ascending = true) {
-        if (n > 1)
-            quick_sort_impl(arr, 0, n - 1, ascending);
-    }
-
-    // 归并排序
-    template<typename T>
-    void merge(T arr[], int l, int m, int r, bool ascending) {
-        int n1 = m - l + 1;
-        int n2 = r - m;
-
-        std::vector<T> L(n1), R(n2);
-        for (int i = 0; i < n1; ++i) L[i] = arr[l + i];
-        for (int i = 0; i < n2; ++i) R[i] = arr[m + 1 + i];
-
-        int i = 0, j = 0, k = l;
-        while (i < n1 && j < n2) {
-            if (ascending ? L[i] <= R[j] : L[i] >= R[j])
-                arr[k++] = L[i++];
-            else
-                arr[k++] = R[j++];
-        }
-
-        while (i < n1) arr[k++] = L[i++];
-        while (j < n2) arr[k++] = R[j++];
-    }
-
-    template<typename T>
-    void merge_sort_impl(T arr[], int l, int r, bool ascending) {
-        if (l >= r) return;
-        int m = l + (r - l) / 2;
-        merge_sort_impl(arr, l, m, ascending);
-        merge_sort_impl(arr, m + 1, r, ascending);
-        merge(arr, l, m, r, ascending);
-    }
-
-    template<typename T>
-    void merge_sort(T arr[], int n, bool ascending = true) {
-        if (n > 1)
-            merge_sort_impl(arr, 0, n - 1, ascending);
-    }
-
-    // 堆排序
-    // 让一个节点 + 它的子树重新满足堆性质
-    template <typename T>
-    void heapify(T arr[], int n, int i, bool ascending) {
-        int extremum = i;
-        int l = 2 * i + 1;
-        int r = 2 * i + 2;
-
-        if (l < n && (ascending ? arr[l] > arr[extremum] : arr[l] < arr[extremum]))
-            extremum = l;
-        if (r < n && (ascending ? arr[r] > arr[extremum] : arr[r] < arr[extremum]))
-            extremum = r;
-
-        if (extremum != i) {
-            std::swap(arr[i], arr[extremum]);
-            heapify(arr, n, extremum, ascending);
-        }
-    }
-
-    template<typename T>
-    void heap_sort(T arr[], int n, bool ascending = true) {
-        // 建堆
-        for (int i = n / 2 - 1; i >= 0; --i)
-            heapify(arr, n, i, ascending);
-
-        // 排序
-        for (int i = n - 1; i > 0; --i) {
-            std::swap(arr[0], arr[i]);
-            heapify(arr, i, 0, ascending);
-        }
-    }
-
 }
-
 
 // bubbleSort 冒泡排序
 int arr[] = {5, 2, 9, 1, 5, 6};
 int n = sizeof(arr) / sizeof(arr[0]);
-
-Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
+bubble_sort(arr, n); // 调用命名空间下的函数
 ```
 
 
-##### 冒泡排序
 ##### 选择排序
 ##### 快速排序
+```cpp
+// 快速排序
+template<typename T>
+int partition(T arr[], int l, int r, bool ascending) {
+    T pivot = arr[r];
+    int i = l - 1;
+    for (int j = l; j < r; ++j) {
+        if (ascending ? arr[j] <= pivot : arr[j] >= pivot) {
+            ++i;
+            std::swap(arr[i], arr[j]);
+        }
+    }
+    std::swap(arr[i + 1], arr[r]);
+    return i + 1;
+}
+
+template<typename T>
+void quick_sort_impl(T arr[], int l, int r, bool ascending) {
+    if (l < r) {
+        int p = partition(arr, l, r, ascending);
+        quick_sort_impl(arr, l, p - 1, ascending);
+        quick_sort_impl(arr, p + 1, r, ascending);
+    }
+}
+
+template<typename T>
+void quick_sort(T arr[], int n, bool ascending = true) {
+    if (n > 1)
+        quick_sort_impl(arr, 0, n - 1, ascending);
+}
+```
 
 ![快速排序](./.assets/快速排序.png)
 二分思想、基于中位点左右分治
@@ -475,6 +401,44 @@ Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 基于快速排序中位点的索引判断左边个数是否为第k个
 
 ##### 归并排序
+```cpp
+// 归并排序
+template<typename T>
+void merge(T arr[], int l, int m, int r, bool ascending) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+
+    std::vector<T> L(n1), R(n2);
+    for (int i = 0; i < n1; ++i) L[i] = arr[l + i];
+    for (int i = 0; i < n2; ++i) R[i] = arr[m + 1 + i];
+
+    int i = 0, j = 0, k = l;
+    while (i < n1 && j < n2) {
+        if (ascending ? L[i] <= R[j] : L[i] >= R[j])
+            arr[k++] = L[i++];
+        else
+            arr[k++] = R[j++];
+    }
+
+    while (i < n1) arr[k++] = L[i++];
+    while (j < n2) arr[k++] = R[j++];
+}
+
+template<typename T>
+void merge_sort_impl(T arr[], int l, int r, bool ascending) {
+    if (l >= r) return;
+    int m = l + (r - l) / 2;
+    merge_sort_impl(arr, l, m, ascending);
+    merge_sort_impl(arr, m + 1, r, ascending);
+    merge(arr, l, m, r, ascending);
+}
+
+template<typename T>
+void merge_sort(T arr[], int n, bool ascending = true) {
+    if (n > 1)
+        merge_sort_impl(arr, 0, n - 1, ascending);
+}
+```
 
 ![归并排序](./.assets/归并排序.png)
 二分思想、最后合并
@@ -484,12 +448,65 @@ Sorting::bubble_sort(arr, n); // 调用命名空间下的函数
 当归并排序从右侧子序列取元素时统计剩余逆序个数
 
 ##### 堆排序
+```cpp
+// 堆排序
+// 让一个节点 + 它的子树重新满足堆性质
+template <typename T>
+void heapify(T arr[], int n, int i, bool ascending) {
+    int extremum = i;
+    int l = 2 * i + 1;
+    int r = 2 * i + 2;
+
+    if (l < n && (ascending ? arr[l] > arr[extremum] : arr[l] < arr[extremum]))
+        extremum = l;
+    if (r < n && (ascending ? arr[r] > arr[extremum] : arr[r] < arr[extremum]))
+        extremum = r;
+
+    if (extremum != i) {
+        std::swap(arr[i], arr[extremum]);
+        heapify(arr, n, extremum, ascending);
+    }
+}
+
+template<typename T>
+void heap_sort(T arr[], int n, bool ascending = true) {
+    // 建堆
+    for (int i = n / 2 - 1; i >= 0; --i)
+        heapify(arr, n, i, ascending);
+
+    // 排序
+    for (int i = n - 1; i > 0; --i) {
+        std::swap(arr[0], arr[i]);
+        heapify(arr, i, 0, ascending);
+    }
+}
+```
 
 ###### 区间合并
 
 左右端点排序
 
+#### 离散化
+```c++
+// 对数组 a[1..n] 进行离散化
+// 返回离散化后的 vals（去重排序后的值域）
+std::vector<int> discretize(int a[], int n) {
+    std::vector<int> vals(a + 1, a + n + 1);
 
+    // 排序 + 去重
+    std::sort(vals.begin(), vals.end());
+    vals.erase(std::unique(vals.begin(), vals.end()), vals.end());
+
+    // 替换为离散化编号
+    for (int i = 1; i <= n; ++i) {
+        // a数组修改为值域表中的编号
+        a[i] = std::lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin() + 1;
+        // 如果你想让离散化从 0 开始就删掉 +1
+    }
+
+    return vals;  // 返回值域表
+}
+```
 
 #### 连续非递增区间
 ```cpp
@@ -526,35 +543,8 @@ vector<pair<int,int>> get_long_non_increasing(const vector<int>& arr) {
 ```
 
 
-### 离散化
-```c++
-namespace Discretization {
-    // 对数组 a[1..n] 进行离散化
-    // 返回离散化后的 vals（去重排序后的值域）
-    std::vector<int> discretize(int a[], int n) {
-        std::vector<int> vals(a + 1, a + n + 1);
-
-        // 排序 + 去重
-        std::sort(vals.begin(), vals.end());
-        vals.erase(std::unique(vals.begin(), vals.end()), vals.end());
-
-        // 替换为离散化编号
-        for (int i = 1; i <= n; ++i) {
-            // a数组修改为值域表中的编号
-            a[i] = std::lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin() + 1;
-            // 如果你想让离散化从 0 开始就删掉 +1
-        }
-
-        return vals;  // 返回值域表
-    }
-}
-```
 
 
-### 模拟
-
-
-### 结论
 
 ### 贪心
 
@@ -562,14 +552,50 @@ namespace Discretization {
 ### 枚举
 
 
-#### 尺取
+
 
 
 #### 双指针
+```cpp
+// 两数之和：给定一个升序排列的整数数组 nums 和一个目标值 target，从数组中找到两个数，使它们相加等于 target，返回两个数下标（下标从 1 开始）
+int l = 0, r = n - 1;
+while (l < r) {
+    int sum = nums[l] + nums[r];
+    if (sum == target) {
+        // 题目下标从1开始
+        cout << l + 1 << " " << r + 1 << endl;
+        break;
+    }
+    else if (sum < target)
+        l++; // 左移变大
+    else
+        r--; // 右移变小
+}
+```
 
+有序遍历优化
 区间枚举问题一般都可以交给双指针优化
 
 
+#### 尺取
+```cpp
+// 长度最小的子数组：给定正整数数组 nums 和一个目标 s，找出和 ≥ s 的最短连续子数组，输出长度
+int l = 0, sum = 0;
+int minLen = 1e9;
+
+for (int r = 0; r < n; ++r) {
+    sum += nums[r];
+
+    // 满足条件就尽量左缩窗口（尺取核心）
+    while (sum >= s) {
+        minLen = min(minLen, r - l + 1);
+        sum -= nums[l];
+        l++;
+    }
+}
+```
+
+尺取法 = 同向双指针
 
 #### 倍增
 
@@ -3438,14 +3464,53 @@ h[a].push_back(e.size() - 1);
 
 #### 链式前向星
 ```c++
-// 边集，next记录下一条边的索引
-struct edge {u, v, next} e[M];
-// h[i]记录每个顶点头边索引，idx记录总创建的边的索引
-int h[N], idx;
+/**
+ * 链式前向星
+ */
+const int N = 100010;  // 点数量
+const int M = 200010;  // 边数量（无向图要开双倍）
 
-// 点a 与 点b之间有 一条边 c
-e[idx] = {a, b, h[a]};
-h[a] = idx++;
+struct Edge {
+    int to, next;
+    // 可选：int w; 带权边就加上
+} e[M];
+
+// 封装成链式前向星类
+class Graph {
+public:
+    int h[N];  // 每个点的第一条边
+    int idx;   // 边编号
+
+    Graph() {
+        memset(h, -1, sizeof h);  // 初始化全部为 -1
+        idx = 0;
+    }
+
+    // 添加一条有向边 a → b
+    void add(int a, int b) {
+        e[idx].to = b;
+        e[idx].next = h[a];
+        h[a] = idx++;
+    }
+
+    // 添加无向边 a ↔ b（等价加两条有向边）
+    void addUndir(int a, int b) {
+        add(a, b);
+        add(b, a);
+    }
+};
+
+Graph g;
+// 加有向边
+g.add(1, 2);
+g.add(1, 3);
+// 加无向边
+g.addUndir(2, 3);
+// 遍历 1 号点的所有邻边
+for (int i = g.h[1]; ~i; i = e[i].next) {
+    int v = e[i].to;
+    cout << "1 → " << v << endl;
+}
 ```
 
 链式邻接表的优化（点集只记录边集的起始节点，边集自带连接）、头插法
@@ -5217,7 +5282,7 @@ $$
 
 
 
-##### 裴蜀定理
+##### 扩展欧几里得
 ```c++
 int exgcd(int a, int b, int &x, int &y) {
     // b = 0, gcd(a, b) = a
@@ -5231,7 +5296,7 @@ int exgcd(int a, int b, int &x, int &y) {
 }
 ```
 
-扩展欧几里得
+扩展欧几里得（裴蜀定理）
 $$
 ax + by = \gcd(a,b) \\
 ax \equiv c \pmod m \;\Longleftrightarrow\; ax + my = c
@@ -5358,13 +5423,11 @@ void euler_sieve(int n) {
 保证每个合数只被最小质因子筛一次
 
 
-#### 整除
+#### 同余
 $$
 a \mid b \iff \exists k \in \mathbb{Z},\; b = ak
 $$
 
-
-#### 同余
 
 $$
 a \equiv b \pmod m \iff m \mid (a-b) \\
@@ -5414,16 +5477,6 @@ $$
 ![费马小定理求逆元](.assets/费马小定理求逆元.png)
 
 
-##### 欧拉定理
-`a^φ(m) ≡ 1 (mod m)，gcd(a,m)=1`
-
-$$
-a^{\varphi(m)} \equiv 1 \pmod m
-$$
-
-$$
-a^{-1} \equiv a^{\varphi(m)-1} \pmod m
-$$
 
 
 
@@ -5461,6 +5514,16 @@ $$
 $$
 
 
+##### 欧拉定理
+`a^φ(m) ≡ 1 (mod m)，gcd(a,m)=1`
+
+$$
+a^{\varphi(m)} \equiv 1 \pmod m
+$$
+
+$$
+a^{-1} \equiv a^{\varphi(m)-1} \pmod m
+$$
 
 
 
