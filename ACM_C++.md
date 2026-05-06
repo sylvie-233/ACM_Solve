@@ -549,6 +549,14 @@ vector<pair<int,int>> get_long_non_increasing(const vector<int>& arr) {
 ### 贪心
 
 
+典型贪心问题：
+1. 区间问题
+    - 区间选点：给定若干区间，选最少的点，让每个区间至少含一个点（策略：按右端点升序排序，每次选当前区间右端点，跳过被覆盖的区间）
+    - 区间覆盖：用最少区间覆盖整条大线段（策略：按左端点升序，每次选能覆盖起点、且右端点最远的区间，更新起点）
+    - 区间互不重叠最多：选最多不相交区间（策略：按右端点升序，能选就选，冲突跳过）
+2. 字符串贪心：
+    - 删 k 个数字得最小数：单调栈 + 贪心
+
 ### 枚举
 
 
@@ -2085,7 +2093,7 @@ int main() {
 
 ### 字符串最小表示法
 ```cpp
-int getMinRotation(string s) {
+int get_min_rotation(string s) {
     int n = s.size();
     string t = s + s;
     int i = 0, j = 1, k = 0;
@@ -6039,6 +6047,89 @@ double polygonArea(const vector<Point>& p) {
     return fabs(res) / 2.0;
 }
 ```
+
+
+#### 平面最近点对
+```cpp
+using Point = std::pair<double, double>;
+
+// 距离平方（避免浮点误差）
+inline double dist_sq(const Point& a, const Point& b) {
+    double dx = a.first - b.first;
+    double dy = a.second - b.second;
+    return dx * dx + dy * dy;
+}
+
+// 分治求最近点对距离平方
+double minimal_distance(const std::vector<Point>& pts, int l, int r) {
+    constexpr double INF = 1e18;
+
+    if (r - l <= 0) return INF; // 无点
+    if (r - l == 1) return dist_sq(pts[l], pts[r]); // 相邻点
+
+    int mid = (l + r) / 2;
+    double d_left  = minimal_distance(pts, l, mid);
+    double d_right = minimal_distance(pts, mid + 1, r);
+    double d = std::min(d_left, d_right);
+
+    // 收集中线附近的点
+    std::vector<Point> strip;
+    strip.reserve(r - l + 1);
+    double mid_x = pts[mid].first;
+
+    for (int i = l; i <= r; ++i) {
+        double dx = pts[i].first - mid_x;
+        if (dx * dx <= d)
+            strip.push_back(pts[i]);
+    }
+
+    // 按 y 排序
+    std::sort(strip.begin(), strip.end(), [](const Point& a, const Point& b) {
+        return a.second < b.second;
+    });
+
+    // 只比较后面 6 个点
+    int sz = strip.size();
+    for (int i = 0; i < sz; ++i) {
+        for (int j = i + 1; j < sz && j <= i + 6; ++j) {
+            d = std::min(d, dist_sq(strip[i], strip[j]));
+        }
+    }
+
+    return d;
+}
+
+// 对外接口：传入点集，返回最近距离
+double closest_pair(std::vector<Point> pts) {
+    std::sort(pts.begin(), pts.end());
+    return std::sqrt(minimal_distance(pts, 0, pts.size() - 1));
+}
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout << std::fixed << std::setprecision(2);
+
+    int n;
+    while (std::cin >> n && n != 0) {
+        std::vector<Point> pts(n);
+        for (auto& [x, y] : pts)
+            std::cin >> x >> y;
+
+        double ans = closest_pair(std::move(pts));
+        std::cout << ans << '\n';
+    }
+    return 0;
+}
+```
+
+点分治：
+1. 所有点按 x 升序排序
+2. 中间劈开，左右递归求最小距离
+3. 取左右最小距离 d
+4. 筛出中线左右 x 方向在 d内的点，按 y 排序
+5. 每个点只往后枚举 6 个点，更新最小距离（在一个 d×2d的矩形里，两两距离不小于 d，最多只能放下 6 个点）
+6. 返回最小距离平方，最后开根号输出
 
 
 
