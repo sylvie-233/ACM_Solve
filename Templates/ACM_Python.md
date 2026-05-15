@@ -967,7 +967,7 @@ def reverseBetween(self, head: Optional[ListNode], left: int, right: int) -> Opt
     return myhead.next
 ```
 
-![链表反转](.assets/链表反转.png)
+![链表反转](../.assets/链表反转.png)
 
 
 ### 二叉树
@@ -1121,7 +1121,7 @@ class MedianFinder:
 对顶堆求中位数（大根堆m+1,小根堆m，中位数就是多出的那个1）
 
 
-![对顶堆原理](.assets/对顶堆原理.png)
+![对顶堆原理](../.assets/对顶堆原理.png)
 
 
 #### 可并堆
@@ -1936,7 +1936,7 @@ def get_z(s: str) -> List[int]:
     return Z
 ```
 
-![z函数l-i复用](.assets/Z函数l-i复用.png)
+![z函数l-i复用](../.assets/Z函数l-i复用.png)
 - 构造 `Z[i]` 数组：表示 `S[i:]` 与 `S[0:]` 的最长公共前缀长度
 - 常用于：字符串哈希、多个匹配点查找、前缀分析等
 
@@ -1998,7 +1998,7 @@ if __name__ == "__main__":
 # 最长回文子串: abacaba
 ```
 
-![马拉车对称优化](.assets/马拉车对称优化.png)
+![马拉车对称优化](../.assets/马拉车对称优化.png)
 在线性时间内求解字符串的最长回文子串或以每个位置为中心的回文半径数组
 - 求出每个字符为中心的最大回文半径
 - 求最长回文子串（经典题）
@@ -2615,8 +2615,8 @@ DFS增广路径
 
 #### Dijkstra
 ```python
-import heapq
 def dijkstra(n, adj, src):
+    import heapq
     INF = float('inf')
     dist = [INF]*n
     dist[src] = 0
@@ -2631,7 +2631,7 @@ def dijkstra(n, adj, src):
                 heapq.heappush(hq, (dist[v], v))
     return dist
 
-# 示例：n 顶点数，adj 邻接表列表 adj[u]=[(v,w),...]，src 源点
+# 示例：n 顶点数，adj 邻接表列表 adj[u]=[(w,v),...]，src 源点
 dist = dijkstra(n, adj, src)
 ```
 
@@ -3271,11 +3271,11 @@ def gcd(a, b):
 
 ##### 扩展欧几里得
 
+#### 素数
 
+##### 素数筛
 
-#### 素数筛
-
-##### 埃拉托色尼筛（Sieve of Eratosthenes）
+###### 埃拉托色尼筛（Sieve of Eratosthenes）
 ```python
 def sieve(n):
     is_prime = [True] * (n + 1)
@@ -3296,13 +3296,11 @@ def sieve(n):
 
 
 
-##### 欧拉筛
+###### 欧拉筛
 
 
 
-#### 质因数分解
-
-##### 试除法
+##### 质因数分解
 ```python
 def prime_factors(n: int) -> list[int]:
     factors: list[int] = []
@@ -3318,26 +3316,26 @@ def prime_factors(n: int) -> list[int]:
 ```
 
 
-
+#### 同余
 
 
 #### 欧拉函数
 
 
-#### 原根
-
-
-#### 逆元
 
 
 
-#### 数论分块
+
+
 
 
 #### 莫比乌斯函数
 
 
 ##### 莫比乌斯反演
+
+
+#### 数论分块
 
 
 #### 大步小步算法BSGS
@@ -3352,7 +3350,7 @@ def prime_factors(n: int) -> list[int]:
 
 ### 组合数学
 
-![两两组合的乘积之和](.assets/两两组合的乘积之和.png)
+![两两组合的乘积之和](../.assets/两两组合的乘积之和.png)
 ```python
 # 优化到 O(n)
 total = sum(nums)
@@ -3381,6 +3379,15 @@ for num in nums:
 
 
 #### 斯特林数
+
+
+#### 多项式
+
+
+##### 快速傅里叶变换 FFT
+
+
+##### 快速数论变换 NTT
 
 
 ### 线性代数
@@ -3441,19 +3448,6 @@ class Matrix:
 
 
 #### 高斯消元
-
-
-### 高等数学
-
-#### 快速傅里叶变换 FFT
-
-
-#### 快速数论变换 NTT
-
-
-#### 快速沃尔什变换 FWT
-
-#### 自适应辛普森积分
 
 
 ### 概率论

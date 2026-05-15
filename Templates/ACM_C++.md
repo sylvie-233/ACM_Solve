@@ -392,12 +392,12 @@ void quick_sort(T arr[], int n, bool ascending = true) {
 }
 ```
 
-![快速排序](./.assets/快速排序.png)
+![快速排序](./../.assets/快速排序.png)
 二分思想、基于中位点左右分治
 
 ###### 第k小的数
 
-![快速排序第k小的数](./.assets/快速排序第k小的数.png)
+![快速排序第k小的数](./../.assets/快速排序第k小的数.png)
 基于快速排序中位点的索引判断左边个数是否为第k个
 
 ##### 归并排序
@@ -440,7 +440,7 @@ void merge_sort(T arr[], int n, bool ascending = true) {
 }
 ```
 
-![归并排序](./.assets/归并排序.png)
+![归并排序](./../.assets/归并排序.png)
 二分思想、最后合并
 
 ###### 逆序对
@@ -605,94 +605,11 @@ for (int r = 0; r < n; ++r) {
 
 尺取法 = 同向双指针
 
-#### 倍增
 
 
 
 
 
-
-
-### 搜索
-
-DFS、BFS
-记忆化搜索：对递归树做了剪枝，搜索过的子树不再重复搜索，直接返回存储值
-
-
-#### DFS
-```cpp
-// 邻接表存储图
-vector<int> g[N];
-bool vis[N]; // 是否访问过
-
-void dfs(int u) {
-    vis[u] = true;
-
-    for (int v : g[u]) {
-        if (!vis[v]) {
-            dfs(v);
-        }
-    }
-}
-
-void dfs(int u, int fa) {
-    // 入节点
-    for (auto v : g[u]) {
-        if (v == fa) continue;
-        // 下节点
-        dfs(v, u);
-        // 回节点
-    }
-    // 出节点
-}
-```
-
-深度优先搜索（依赖vis访问数组 判断是否访问过）
-递归调用，依赖系统栈
-树状结构可根据fa父节点，判断是否访问过
-
-
-
-##### 双向DFS
-
-
-
-#### BFS
-```cpp
-// 邻接表存储图
-std::vector<int> g[N];
-bool vis[N]; // 是否访问过
-int dist[N]; // 起点到每个点的最短距离
-
-void bfs(int start) {
-    std::memset(vis, 0, sizeof vis); // <cstring>
-    std::memset(dist, -1, sizeof dist);
-
-    // 起点初始化
-    std::queue<int> q;
-    q.push(start);
-    vis[start] = true;
-    dist[start] = 0;
-
-    while (!q.empty()) {
-        int u = q.front(); q.pop();
-
-        for (int v : g[u]) {
-            if (!vis[v]) {
-                vis[v] = true;
-                dist[v] = dist[u] + 1;
-                q.push(v);
-            }
-        }
-    }
-}
-```
-
-宽度优先搜索（依赖队列先进先出特性）
-队列中存在两段的层次
-
-
-##### 多源BFS
 
 
 
@@ -714,13 +631,13 @@ namespace Searching {
 }
 ```
 
-![二分查找分类](./.assets/二分查找分类.png)
+![二分查找分类](./../.assets/二分查找分类.png)
 - 最小化答案、最大化答案
 - 上升区、下降区（自变量x与因变量y的关系）
 
 #### 01分数规划
 
-![01分数规划](./.assets/01分数规划.png)
+![01分数规划](./../.assets/01分数规划.png)
 物品01选择问题使得结果最大（最小）化（转换游戏规则）
 
 
@@ -788,7 +705,7 @@ public:
 
 #### 树上前缀和
 
-![树上前缀和](./.assets/树上前缀和.png)
+![树上前缀和](./../.assets/树上前缀和.png)
 
 多次查询树上一些路径的权值和、考虑使用树上前缀和（区分点前缀和、边前缀和）
 与LCA相关、依赖根节点到子节点的路径权值和
@@ -796,7 +713,7 @@ public:
 
 ### 差分
 
-![差分](./.assets/差分.png)
+![差分](./../.assets/差分.png)
 
 差分 是一个非常实用又简单的技巧，特别适合处理：
 - 区间加
@@ -936,247 +853,16 @@ while (q--) {
 auto res = diff.build();
 ```
 
-![二维差分原理](.assets/二维差分原理.png)
+![二维差分原理](../.assets/二维差分原理.png)
 
 
 #### 树上差分
 
-![树上差分](.assets/树上差分.png)
+![树上差分](../.assets/树上差分.png)
 多次对树上一些路径做加法操作、然后查询某个点、某条边在操作之后的值，考虑使用树上差分（区分点差分、边差分）
 通过子树和还原
 
-### 分块
 
-分块是一种典型的空间换时间的数据结构技巧，非常适合处理：
-- 区间查询（区间和、最大最小值、异或等）
-- 区间修改（加值、赋值等）
-- 单点修改 + 区间查询
-
-
-#### 区间求和
-```c++
-struct SqrtBlock {
-    int n, len, numBlocks;
-    vector<long long> a;       // 原数组
-    vector<long long> sum;     // 每块的和
-    vector<long long> lazy;    // 懒标记：整块加
-
-    SqrtBlock(int n): n(n) {
-        len = sqrt(n) + 1;
-        numBlocks = (n + len - 1) / len;
-
-        a.assign(n + 1, 0);
-        sum.assign(numBlocks + 1, 0);
-        lazy.assign(numBlocks + 1, 0);
-    }
-
-    // 从数组构造
-    void build() {
-        for (int i = 1; i <= n; ++i) {
-            sum[(i-1)/len] += a[i];
-        }
-    }
-
-    // 对块应用 lazy 标记
-    void push_down(int b) {
-        if (lazy[b] == 0) return;
-        int L = b * len + 1;
-        int R = min(n, (b + 1) * len);
-        for (int i = L; i <= R; ++i) a[i] += lazy[b];
-        lazy[b] = 0;
-    }
-
-    // 单点更新：a[x] = v
-    void point_update(int x, long long v) {
-        int b = (x - 1) / len;
-        push_down(b);
-        sum[b] += v - a[x];
-        a[x] = v;
-    }
-
-    // 区间加：对 [l, r] 所有加 k
-    void range_add(int l, int r, long long k) {
-        int bl = (l - 1) / len;
-        int br = (r - 1) / len;
-
-        if (bl == br) {
-            push_down(bl);
-            for (int i = l; i <= r; ++i) {
-                a[i] += k;
-                sum[bl] += k;
-            }
-            return;
-        }
-
-        // 左边块
-        push_down(bl);
-        for (int i = l; (i - 1) / len == bl; ++i) {
-            a[i] += k;
-            sum[bl] += k;
-        }
-
-        // 中间整块
-        for (int b = bl + 1; b < br; ++b) {
-            lazy[b] += k;
-            sum[b] += k * len;
-        }
-
-        // 右边块
-        push_down(br);
-        for (int i = r; (i - 1) / len == br; --i) {
-            a[i] += k;
-            sum[br] += k;
-        }
-    }
-
-    // 区间查询：求 [l, r] 的和
-    long long range_query(int l, int r) {
-        long long res = 0;
-        int bl = (l - 1) / len;
-        int br = (r - 1) / len;
-
-        if (bl == br) {
-            push_down(bl);
-            for (int i = l; i <= r; ++i) res += a[i];
-            return res;
-        }
-
-        // 左边块散点
-        push_down(bl);
-        for (int i = l; (i - 1) / len == bl; ++i) res += a[i];
-
-        // 中间整块
-        for (int b = bl + 1; b < br; ++b) {
-            res += sum[b];
-        }
-
-        // 右边块散点
-        push_down(br);
-        for (int i = r; (i - 1) / len == br; --i) res += a[i];
-
-        return res;
-    }
-};
-
-
-SqrtBlock sb(n);
-for (int i = 1; i <= n; ++i) {
-    cin >> sb.a[i];
-}
-sb.build();
-while (q--) {
-    int op;
-    cin >> op;
-    if (op == 1) {
-        int x, v;
-        cin >> x >> v;
-        sb.point_update(x, v);
-    } else if (op == 2) {
-        int l, r, k;
-        cin >> l >> r >> k;
-        sb.range_add(l, r, k);
-    } else {
-        int l, r;
-        cin >> l >> r;
-        cout << sb.range_query(l, r) << "\n";
-    }
-}
-```
-
-
-
-
-### 莫队
-
-离线查询
-
-莫队算法（Mo's Algorithm）：常用于离线区间查询问题的高效解法，特别适合处理：
-- 区间种类数统计（如：区间不同数字个数）
-- 区间众数、区间最大最小值等（需稍加改写）
-- 数据不修改，纯查询（不支持动态修改）
-
-核心原理：避免重复计算
-不用每次都从头计算每个区间，而是通过维护一个滑动窗口 [L, R]，只对变化部分进行加删操作！
-
-
-
-#### 区间不同数字个数
-```c++
-// 问题：给定一个数组 a[1..n] 和 m 次查询，每次查询区间 [l, r] 中不同数字的个数
-
-struct Query {
-    int l, r, id;
-};
-
-struct Mo {
-    int n;                    // 数组大小
-    int block;                // 块大小
-    vector<int> a;            // 原数组
-    vector<Query> qs;         // 查询
-    vector<int> cnt, ans;     // 计数数组与答案 cnt记录当前统计范围 元素值 的个数
-    int distinct = 0;         // 当前答案
-
-    Mo(int n, const vector<int>& arr, int maxA)
-        : n(n), a(arr) {
-        block = sqrt(n); // 平方分块
-        cnt.assign(maxA + 1, 0);
-    }
-
-    void addQuery(int l, int r, int id) {
-        qs.push_back({l, r, id});
-    }
-
-    // 添加一个元素
-    inline void add(int x) {
-        if (cnt[x]++ == 0) distinct++; 
-    }
-
-    // 删除一个元素
-    inline void remove(int x) {
-        if (--cnt[x] == 0) distinct--;
-    }
-
-    vector<int> run() {
-        int m = qs.size();
-        ans.assign(m, 0);
-
-        sort(qs.begin(), qs.end(), [&](const Query& A, const Query& B) {
-            int blockA = A.l / block;
-            int blockB = B.l / block;
-            if (blockA != blockB) return blockA < blockB;
-            return (blockA & 1) ? (A.r < B.r) : (A.r > B.r); // 奇偶优化
-        });
-
-        int L = 1, R = 0; // 当前统计范围
-
-        for (auto& q : qs) {
-            while (L > q.l) add(a[--L]);
-            while (R < q.r) add(a[++R]);
-            while (L < q.l) remove(a[L++]);
-            while (R > q.r) remove(a[R--]);
-
-            ans[q.id] = distinct;
-        }
-
-        return ans;
-    }
-};
-
-
-vector<int> a(n + 1);
-int maxA = 0;
-for (int i = 1; i <= n; ++i) {
-    cin >> a[i];
-    maxA = max(maxA, a[i]);
-}
-Mo mo(n, a, maxA);
-for (int i = 0; i < m; ++i) {
-    int l, r;
-    cin >> l >> r;
-    mo.addQuery(l, r, i);
-}
-auto ans = mo.run();
-```
 
 
 
@@ -1381,7 +1067,7 @@ vector<int> maxSlidingWindow(vector<int>& nums, int k) {
 
 ##### 第k大的数
 
-![对顶堆第k大的数](.assets/对顶堆第k大的数.png)
+![对顶堆第k大的数](../.assets/对顶堆第k大的数.png)
 一个小根堆和一个大根堆对接（类似漏斗），保证小根堆的所有元素大于等于大根堆的元素，并且维持小根堆元素的个数，从而保证大根堆的顶部元素就是第k大的数
 
 
@@ -1532,8 +1218,8 @@ struct SparseTable {
 ```
 
 ST 表（Sparse Table，稀疏表）是用于解决 可重复贡献问题 的数据结构
-![ST表](.assets/st表.png)
-![ST表存储格式](.assets/ST表存储格式.png)   
+![ST表](../.assets/st表.png)
+![ST表存储格式](../.assets/ST表存储格式.png)   
 
 目标：
 - 区间最值
@@ -1549,7 +1235,7 @@ ST 表（Sparse Table，稀疏表）是用于解决 可重复贡献问题 的数
 ### 树状数组
 
 
-![树状数组结构](.assets/树状数组结构.png)
+![树状数组结构](../.assets/树状数组结构.png)
 
 
 - 树状数组只能处理前缀问题
@@ -2088,6 +1774,240 @@ int main() {
 - 二维化一维，x轴排序遍历、y轴按线段树统计总和
 
 
+### 分块
+
+分块是一种典型的空间换时间的数据结构技巧，非常适合处理：
+- 区间查询（区间和、最大最小值、异或等）
+- 区间修改（加值、赋值等）
+- 单点修改 + 区间查询
+
+
+#### 区间求和
+```c++
+struct SqrtBlock {
+    int n, len, numBlocks;
+    vector<long long> a;       // 原数组
+    vector<long long> sum;     // 每块的和
+    vector<long long> lazy;    // 懒标记：整块加
+
+    SqrtBlock(int n): n(n) {
+        len = sqrt(n) + 1;
+        numBlocks = (n + len - 1) / len;
+
+        a.assign(n + 1, 0);
+        sum.assign(numBlocks + 1, 0);
+        lazy.assign(numBlocks + 1, 0);
+    }
+
+    // 从数组构造
+    void build() {
+        for (int i = 1; i <= n; ++i) {
+            sum[(i-1)/len] += a[i];
+        }
+    }
+
+    // 对块应用 lazy 标记
+    void push_down(int b) {
+        if (lazy[b] == 0) return;
+        int L = b * len + 1;
+        int R = min(n, (b + 1) * len);
+        for (int i = L; i <= R; ++i) a[i] += lazy[b];
+        lazy[b] = 0;
+    }
+
+    // 单点更新：a[x] = v
+    void point_update(int x, long long v) {
+        int b = (x - 1) / len;
+        push_down(b);
+        sum[b] += v - a[x];
+        a[x] = v;
+    }
+
+    // 区间加：对 [l, r] 所有加 k
+    void range_add(int l, int r, long long k) {
+        int bl = (l - 1) / len;
+        int br = (r - 1) / len;
+
+        if (bl == br) {
+            push_down(bl);
+            for (int i = l; i <= r; ++i) {
+                a[i] += k;
+                sum[bl] += k;
+            }
+            return;
+        }
+
+        // 左边块
+        push_down(bl);
+        for (int i = l; (i - 1) / len == bl; ++i) {
+            a[i] += k;
+            sum[bl] += k;
+        }
+
+        // 中间整块
+        for (int b = bl + 1; b < br; ++b) {
+            lazy[b] += k;
+            sum[b] += k * len;
+        }
+
+        // 右边块
+        push_down(br);
+        for (int i = r; (i - 1) / len == br; --i) {
+            a[i] += k;
+            sum[br] += k;
+        }
+    }
+
+    // 区间查询：求 [l, r] 的和
+    long long range_query(int l, int r) {
+        long long res = 0;
+        int bl = (l - 1) / len;
+        int br = (r - 1) / len;
+
+        if (bl == br) {
+            push_down(bl);
+            for (int i = l; i <= r; ++i) res += a[i];
+            return res;
+        }
+
+        // 左边块散点
+        push_down(bl);
+        for (int i = l; (i - 1) / len == bl; ++i) res += a[i];
+
+        // 中间整块
+        for (int b = bl + 1; b < br; ++b) {
+            res += sum[b];
+        }
+
+        // 右边块散点
+        push_down(br);
+        for (int i = r; (i - 1) / len == br; --i) res += a[i];
+
+        return res;
+    }
+};
+
+
+SqrtBlock sb(n);
+for (int i = 1; i <= n; ++i) {
+    cin >> sb.a[i];
+}
+sb.build();
+while (q--) {
+    int op;
+    cin >> op;
+    if (op == 1) {
+        int x, v;
+        cin >> x >> v;
+        sb.point_update(x, v);
+    } else if (op == 2) {
+        int l, r, k;
+        cin >> l >> r >> k;
+        sb.range_add(l, r, k);
+    } else {
+        int l, r;
+        cin >> l >> r;
+        cout << sb.range_query(l, r) << "\n";
+    }
+}
+```
+
+
+
+
+### 莫队
+
+离线查询
+
+莫队算法（Mo's Algorithm）：常用于离线区间查询问题的高效解法，特别适合处理：
+- 区间种类数统计（如：区间不同数字个数）
+- 区间众数、区间最大最小值等（需稍加改写）
+- 数据不修改，纯查询（不支持动态修改）
+
+核心原理：避免重复计算
+不用每次都从头计算每个区间，而是通过维护一个滑动窗口 [L, R]，只对变化部分进行加删操作！
+
+
+
+#### 区间不同数字个数
+```c++
+// 问题：给定一个数组 a[1..n] 和 m 次查询，每次查询区间 [l, r] 中不同数字的个数
+
+struct Query {
+    int l, r, id;
+};
+
+struct Mo {
+    int n;                    // 数组大小
+    int block;                // 块大小
+    vector<int> a;            // 原数组
+    vector<Query> qs;         // 查询
+    vector<int> cnt, ans;     // 计数数组与答案 cnt记录当前统计范围 元素值 的个数
+    int distinct = 0;         // 当前答案
+
+    Mo(int n, const vector<int>& arr, int maxA)
+        : n(n), a(arr) {
+        block = sqrt(n); // 平方分块
+        cnt.assign(maxA + 1, 0);
+    }
+
+    void addQuery(int l, int r, int id) {
+        qs.push_back({l, r, id});
+    }
+
+    // 添加一个元素
+    inline void add(int x) {
+        if (cnt[x]++ == 0) distinct++; 
+    }
+
+    // 删除一个元素
+    inline void remove(int x) {
+        if (--cnt[x] == 0) distinct--;
+    }
+
+    vector<int> run() {
+        int m = qs.size();
+        ans.assign(m, 0);
+
+        sort(qs.begin(), qs.end(), [&](const Query& A, const Query& B) {
+            int blockA = A.l / block;
+            int blockB = B.l / block;
+            if (blockA != blockB) return blockA < blockB;
+            return (blockA & 1) ? (A.r < B.r) : (A.r > B.r); // 奇偶优化
+        });
+
+        int L = 1, R = 0; // 当前统计范围
+
+        for (auto& q : qs) {
+            while (L > q.l) add(a[--L]);
+            while (R < q.r) add(a[++R]);
+            while (L < q.l) remove(a[L++]);
+            while (R > q.r) remove(a[R--]);
+
+            ans[q.id] = distinct;
+        }
+
+        return ans;
+    }
+};
+
+
+vector<int> a(n + 1);
+int maxA = 0;
+for (int i = 1; i <= n; ++i) {
+    cin >> a[i];
+    maxA = max(maxA, a[i]);
+}
+Mo mo(n, a, maxA);
+for (int i = 0; i < m; ++i) {
+    int l, r;
+    cin >> l >> r;
+    mo.addQuery(l, r, i);
+}
+auto ans = mo.run();
+```
+
+
 ## 三、字符串
 
 
@@ -2230,7 +2150,7 @@ MatrixHash2D H(a);
 cout << H.query(1,1,2,2) << "\n";
 ```
 
-![二维hash原理](.assets/二维hash原理.png)
+![二维hash原理](../.assets/二维hash原理.png)
 把一个东西转换成一个大整数，这样比较两个东西是否相等的就只要比较两个整数是否相等就行了
 
 
@@ -2509,8 +2429,8 @@ for (int x : extend)
 ```
 
 扩展 KMP（ExKMP / Z Algorithm）通常用于：求 字符串每个位置与模式串前缀的最长匹配
-![扩展KMP](./.assets/扩展KMP.png)
-![扩展KMP_match](./.assets/扩展KMP_match.png)
+![扩展KMP](./../.assets/扩展KMP.png)
+![扩展KMP_match](./../.assets/扩展KMP_match.png)
 
 1. `z[i]`：`pattern[i:]` 与 pattern 的最长公共前缀
 2. `extend[i]`：`text[i:]` 与 pattern 的最长公共前缀
@@ -2600,7 +2520,7 @@ public:
 
 ```
 
-![Manacher](./.assets/Manacher.png)
+![Manacher](./../.assets/Manacher.png)
 `p[i] = 以 i 为中心的回文半径（不包含当前字符）`
 `回文长度 = 2 * p[i] + 1`
 
@@ -3030,7 +2950,7 @@ extend构建流程：
 状态转移方程
 
 DP的步骤：
-1. 确定状态变量（函数）
+1. 确定状态定义（函数）
 2. 确定转移方程（递推关系）
 3. 确定边界条件
 4. 确定递推顺序
@@ -3068,6 +2988,15 @@ DP的步骤：
 
 `f[i][0]`表示第i天手中无票的最大利润
 `f[i][1]`表示第i天手中有票的最大利润
+
+
+
+#### 俄罗斯套娃信封
+
+二维LIS
+1. 排序：按宽度升序，宽度相同时高度降序
+2. 在高度数组上求严格递增LIS（用贪心+二分 O(n log n)）（返回LIS长度）
+
 
 
 
@@ -3524,7 +3453,86 @@ for (int i = g.h[1]; ~i; i = e[i].next) {
 链式邻接表的优化（点集只记录边集的起始节点，边集自带连接）、头插法
 也能处理反向边
 
+### 搜索
 
+DFS、BFS
+记忆化搜索：对递归树做了剪枝，搜索过的子树不再重复搜索，直接返回存储值
+
+
+#### DFS
+```cpp
+// 邻接表存储图
+vector<int> g[N];
+bool vis[N]; // 是否访问过
+
+void dfs(int u) {
+    vis[u] = true;
+
+    for (int v : g[u]) {
+        if (!vis[v]) {
+            dfs(v);
+        }
+    }
+}
+
+void dfs(int u, int fa) {
+    // 入节点
+    for (auto v : g[u]) {
+        if (v == fa) continue;
+        // 下节点
+        dfs(v, u);
+        // 回节点
+    }
+    // 出节点
+}
+```
+
+深度优先搜索（依赖vis访问数组 判断是否访问过）
+递归调用，依赖系统栈
+树状结构可根据fa父节点，判断是否访问过
+
+
+
+##### 双向DFS
+
+
+
+#### BFS
+```cpp
+// 邻接表存储图
+std::vector<int> g[N];
+bool vis[N]; // 是否访问过
+int dist[N]; // 起点到每个点的最短距离
+
+void bfs(int start) {
+    std::memset(vis, 0, sizeof vis); // <cstring>
+    std::memset(dist, -1, sizeof dist);
+
+    // 起点初始化
+    std::queue<int> q;
+    q.push(start);
+    vis[start] = true;
+    dist[start] = 0;
+
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+
+        for (int v : g[u]) {
+            if (!vis[v]) {
+                vis[v] = true;
+                dist[v] = dist[u] + 1;
+                q.push(v);
+            }
+        }
+    }
+}
+```
+
+宽度优先搜索（依赖队列先进先出特性）
+队列中存在两段的层次
+
+
+##### 多源BFS
 
 
 
@@ -4422,7 +4430,7 @@ eDCC：无向图缩点 + 无向图割边
 二叉树中序遍历：`左 -> 中 -> 右`，一个节点在访问时它的左子树一定访问完了
 二叉树后序遍历：`左 -> 右 -> 中`，一个节点在访问时它的左右子树一定都访问完了
 
-![二叉树遍历](.assets/二叉树遍历.png)
+![二叉树遍历](../.assets/二叉树遍历.png)
 
 
 #### 树的直径
@@ -4631,7 +4639,7 @@ int main() {
 轻链：剩下的那些儿子连接的边叫轻边，连起来是轻链。
 
 树链剖分的目标是：把一棵树拆成尽量少的“段”，以便我们可以用线段树去维护路径上的值
-![树链剖分](.assets/hld树链剖分.png)
+![树链剖分](../.assets/hld树链剖分.png)
 
 
 #### LCA
@@ -5314,7 +5322,7 @@ $$
 对任意整数 a, b，存在整数 x, y，使得`ax + by = gcd(a, b)`
 
 解`ax + by = gcd(a, b)`
-![扩展欧几里得算法](.assets/扩展欧几里得算法.png)
+![扩展欧几里得算法](../.assets/扩展欧几里得算法.png)
 
 
 
@@ -5482,7 +5490,7 @@ $$
 `a^(p-1) ≡ 1 (mod p)`（模是质数）
 
 
-![费马小定理求逆元](.assets/费马小定理求逆元.png)
+![费马小定理求逆元](../.assets/费马小定理求逆元.png)
 
 
 
@@ -5590,8 +5598,8 @@ ll C(int n, int k) {
 }
 ```
 
-![大组合数求模逆元](.assets/大组合数求模逆元.png)
-![逆元递推](.assets/逆元递推.png)
+![大组合数求模逆元](../.assets/大组合数求模逆元.png)
+![逆元递推](../.assets/逆元递推.png)
 
 
 

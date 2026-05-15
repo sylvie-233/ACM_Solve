@@ -964,10 +964,7 @@ class Trie {
     return ans;
   }
 };
-}  // namespace SS
-
+}  // namespace Str
 
 // 图论相关
-namespace Graph {
-
-}
+namespace Graph {}
