@@ -3,8 +3,6 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
-#include <format>
-#include <iostream>
 #include <stack>
 #include <string>
 #include <utility>
@@ -16,194 +14,24 @@ using ull = unsigned long long;
 // 内置工具使用使用
 using std::string;
 
-// 数学库
-namespace Math {
-// 大数运算
-class BigInt {
- private:
-  string num;     // 存储数字，正数形式
-  bool negative;  // 是否为负数
+// 数组
+namespace Array {
 
-  // 内部辅助函数：比较两个正数的大小
-  static int compareAbs(const string& a, const string& b) {
-    if (a.size() != b.size()) return a.size() > b.size() ? 1 : -1;
-    for (size_t i = 0; i < a.size(); ++i) {
-      if (a[i] != b[i]) return a[i] > b[i] ? 1 : -1;
-    }
-    return 0;
-  }
-
-  // 内部辅助函数：正数加法
-  static string addStrings(const string& a, const string& b) {
-    string A = a, B = b;
-    if (A.size() < B.size()) std::swap(A, B);
-    std::reverse(A.begin(), A.end());
-    std::reverse(B.begin(), B.end());
-    int carry = 0;
-    string res;
-    for (size_t i = 0; i < A.size(); ++i) {
-      int sum = A[i] - '0' + carry;
-      if (i < B.size()) sum += B[i] - '0';
-      res += (sum % 10) + '0';
-      carry = sum / 10;
-    }
-    if (carry) res += carry + '0';
-    std::reverse(res.begin(), res.end());
-    return res;
-  }
-
-  // 内部辅助函数：正数减法 (a >= b)
-  static string subStrings(const string& a, const string& b) {
-    string A = a, B = b;
-    std::reverse(A.begin(), A.end());
-    std::reverse(B.begin(), B.end());
-    int borrow = 0;
-    string res;
-    for (size_t i = 0; i < A.size(); ++i) {
-      int diff = A[i] - '0' - borrow;
-      if (i < B.size()) diff -= B[i] - '0';
-      if (diff < 0) {
-        diff += 10;
-        borrow = 1;
-      } else
-        borrow = 0;
-      res += diff + '0';
-    }
-    while (res.size() > 1 && res.back() == '0') res.pop_back();
-    std::reverse(res.begin(), res.end());
-    return res;
-  }
-
- public:
-  // 构造函数
-  BigInt(ll x = 0) {
-    if (x < 0) {
-      negative = true;
-      x = -x;
-    } else {
-      negative = false;
-    }
-    num = std::to_string(x);
-  }
-
-  BigInt(const string& s) {
-    if (s[0] == '-') {
-      negative = true;
-      num = s.substr(1);
-    } else {
-      negative = false;
-      num = s;
-    }
-  }
-
-  // 输出字符串
-  string toString() const { return (negative && num != "0" ? "-" : "") + num; }
-
-  // 加法
-  BigInt operator+(const BigInt& b) const {
-    if (negative == b.negative)
-      return BigInt((negative ? "-" : "") + addStrings(num, b.num));
-    else {
-      int cmp = compareAbs(num, b.num);
-      if (cmp == 0) return BigInt(0);
-      if (cmp > 0)
-        return BigInt((negative ? "-" : "") + subStrings(num, b.num));
-      else
-        return BigInt((b.negative ? "-" : "") + subStrings(b.num, num));
-    }
-  }
-
-  // 减法
-  BigInt operator-(const BigInt& b) const {
-    BigInt temp = b;
-    temp.negative = !temp.negative;
-    return *this + temp;
-  }
-
-  // 乘法
-  BigInt operator*(const BigInt& b) const {
-    std::vector<int> res(num.size() + b.num.size(), 0);
-    string A = num, B = b.num;
-    std::reverse(A.begin(), A.end());
-    std::reverse(B.begin(), B.end());
-    for (size_t i = 0; i < A.size(); ++i)
-      for (size_t j = 0; j < B.size(); ++j)
-        res[i + j] += (A[i] - '0') * (B[j] - '0');
-    for (size_t i = 0; i < res.size(); ++i) {
-      if (res[i] >= 10) {
-        res[i + 1] += res[i] / 10;
-        res[i] %= 10;
+// 冒泡排序 默认升序）
+template <typename T>
+void bubble_sort(T arr[], int n, bool ascending = true) {
+  for (int i = 0; i < n - 1; ++i) {
+    bool swapped = false;
+    for (int j = 0; j < n - i - 1; ++j) {
+      if (ascending ? arr[j] > arr[j + 1] : arr[j] < arr[j + 1]) {
+        std::swap(arr[j], arr[j + 1]);
+        swapped = true;
       }
     }
-    while (res.size() > 1 && res.back() == 0) res.pop_back();
-    string ans;
-    for (int i = res.size() - 1; i >= 0; --i) ans += res[i] + '0';
-    BigInt result(ans);
-    result.negative = negative != b.negative && ans != "0";
-    return result;
+    if (!swapped) break;  // 提前退出
   }
-
-  // 除法 (大数 / int)
-  BigInt operator/(int b) const {
-    string res;
-    int r = 0;
-    for (char c : num) {
-      r = r * 10 + (c - '0');
-      res += (r / b) + '0';
-      r %= b;
-    }
-    size_t pos = res.find_first_not_of('0');
-    if (pos != string::npos)
-      res = res.substr(pos);
-    else
-      res = "0";
-    BigInt result(res);
-    result.negative = negative && res != "0";
-    return result;
-  }
-
-  // 取模 (大数 % int)
-  int operator%(int b) const {
-    int r = 0;
-    for (char c : num) r = (r * 10 + (c - '0')) % b;
-    return negative ? -r : r;
-  }
-
-  // 比较运算符
-  bool operator<(const BigInt& b) const {
-    if (negative != b.negative) return negative;
-    int cmp = compareAbs(num, b.num);
-    return negative ? cmp > 0 : cmp < 0;
-  }
-
-  bool operator>(const BigInt& b) const { return b < *this; }
-  bool operator<=(const BigInt& b) const { return !(*this > b); }
-  bool operator>=(const BigInt& b) const { return !(*this < b); }
-  bool operator==(const BigInt& b) const {
-    return num == b.num && negative == b.negative;
-  }
-  bool operator!=(const BigInt& b) const { return !(*this == b); }
-};
-
-// 快速幂 计算 a^b % mod
-ll qpow(ll a, ll b, ll mod) {
-  ll res = 1;
-  a %= mod;  // 先对底数取模，防止溢出
-
-  while (b) {
-    if (b & 1) res = res * a % mod;  // 如果当前位是1，则乘上a
-    a = a * a % mod;                 // a 每轮平方
-    b >>= 1;                         // b 右移一位，相当于除以2
-  }
-  return res;
 }
 
-// gcd 最大公约数
-int gcd(int a, int b) { return b == 0 ? a : gcd(b, a % b); }
-}  // namespace Math
-
-// 搜索库
-namespace Searching {
 // 二分查找 在升序序列中二分查找某数 x 的位置，二分区间为
 // [left,right]，如果不存在，返回-1
 int binary_search(int arr[], int left, int right, int v) {
@@ -218,10 +46,7 @@ int binary_search(int arr[], int left, int right, int v) {
   }
   return -1;
 }
-}  // namespace Searching
 
-// 离散化库
-namespace Discretization {
 // 对数组 a[1..n] 进行离散化
 // 返回离散化后的 vals（去重排序后的值域）
 std::vector<int> discretize(int a[], int n) {
@@ -240,25 +65,8 @@ std::vector<int> discretize(int a[], int n) {
 
   return vals;  // 返回值域表
 }
-}  // namespace Discretization
 
-// 排序库
-namespace Sorting {
-// 冒泡排序 默认升序）
-template <typename T>
-void bubble_sort(T arr[], int n, bool ascending = true) {
-  for (int i = 0; i < n - 1; ++i) {
-    bool swapped = false;
-    for (int j = 0; j < n - i - 1; ++j) {
-      if (ascending ? arr[j] > arr[j + 1] : arr[j] < arr[j + 1]) {
-        std::swap(arr[j], arr[j + 1]);
-        swapped = true;
-      }
-    }
-    if (!swapped) break;  // 提前退出
-  }
-}
-}  // namespace Sorting
+}  // namespace Array
 
 namespace PrefixSum {
 class PrefixSum2D {
@@ -361,15 +169,16 @@ struct DiffArray {
 };
 
 // 二维差分 区间加
-struct Diff2D {
+struct DiffArray2D {
   int n, m;
   std::vector<std::vector<int>> diff;
 
   // 构造空差分矩阵
-  Diff2D(int n, int m) : n(n), m(m), diff(n + 2, std::vector<int>(m + 2, 0)) {}
+  DiffArray2D(int n, int m)
+      : n(n), m(m), diff(n + 2, std::vector<int>(m + 2, 0)) {}
 
   // 用原始矩阵构造（支持二维 C 数组）
-  Diff2D(int a[][1010], int n, int m)
+  DiffArray2D(int a[][1010], int n, int m)
       : n(n), m(m), diff(n + 2, std::vector<int>(m + 2, 0)) {
     for (int i = 1; i <= n; ++i)
       for (int j = 1; j <= m; ++j) insert(i, j, i, j, a[i][j]);
@@ -395,174 +204,6 @@ struct Diff2D {
   }
 };
 }  // namespace Diff
-
-// 分块库
-namespace Block {
-struct SqrtBlock {
-  int n, len, numBlocks;
-  std::vector<ll> a;     // 原数组
-  std::vector<ll> sum;   // 每块的和
-  std::vector<ll> lazy;  // 懒标记：整块加
-
-  SqrtBlock(int n) : n(n) {
-    len = std::sqrt(n) + 1;
-    numBlocks = (n + len - 1) / len;
-
-    a.assign(n + 1, 0);
-    sum.assign(numBlocks + 1, 0);
-    lazy.assign(numBlocks + 1, 0);
-  }
-
-  // 从数组构造
-  void build() {
-    for (int i = 1; i <= n; ++i) {
-      sum[(i - 1) / len] += a[i];
-    }
-  }
-
-  // 对块应用 lazy 标记
-  void push_down(int b) {
-    if (lazy[b] == 0) return;
-    int L = b * len + 1;
-    int R = std::min(n, (b + 1) * len);
-    for (int i = L; i <= R; ++i) a[i] += lazy[b];
-    lazy[b] = 0;
-  }
-
-  // 单点更新：a[x] = v
-  void point_update(int x, ll v) {
-    int b = (x - 1) / len;
-    push_down(b);
-    sum[b] += v - a[x];
-    a[x] = v;
-  }
-
-  // 区间加：对 [l, r] 所有加 k
-  void range_add(int l, int r, ll k) {
-    int bl = (l - 1) / len;
-    int br = (r - 1) / len;
-
-    if (bl == br) {
-      push_down(bl);
-      for (int i = l; i <= r; ++i) {
-        a[i] += k;
-        sum[bl] += k;
-      }
-      return;
-    }
-
-    // 左边块
-    push_down(bl);
-    for (int i = l; (i - 1) / len == bl; ++i) {
-      a[i] += k;
-      sum[bl] += k;
-    }
-
-    // 中间整块
-    for (int b = bl + 1; b < br; ++b) {
-      lazy[b] += k;
-      sum[b] += k * len;
-    }
-
-    // 右边块
-    push_down(br);
-    for (int i = r; (i - 1) / len == br; --i) {
-      a[i] += k;
-      sum[br] += k;
-    }
-  }
-
-  // 区间查询：求 [l, r] 的和
-  ll range_query(int l, int r) {
-    ll res = 0;
-    int bl = (l - 1) / len;
-    int br = (r - 1) / len;
-
-    if (bl == br) {
-      push_down(bl);
-      for (int i = l; i <= r; ++i) res += a[i];
-      return res;
-    }
-
-    // 左边块散点
-    push_down(bl);
-    for (int i = l; (i - 1) / len == bl; ++i) res += a[i];
-
-    // 中间整块
-    for (int b = bl + 1; b < br; ++b) {
-      res += sum[b];
-    }
-
-    // 右边块散点
-    push_down(br);
-    for (int i = r; (i - 1) / len == br; --i) res += a[i];
-
-    return res;
-  }
-};
-}  // namespace Block
-
-// 莫队库
-namespace MoAlgo {
-
-// 查询条件
-struct Query {
-  int l, r, id;
-};
-
-// 区间不同个数统计
-struct Mo {
-  int n;                  // 数组大小
-  int block;              // 块大小
-  std::vector<int> a;     // 原数组
-  std::vector<Query> qs;  // 查询
-  std::vector<int> cnt,
-      ans;           // 计数数组与答案 cnt记录当前统计范围 元素值 的个数
-  int distinct = 0;  // 当前答案
-
-  Mo(int n, const std::vector<int>& arr, int maxA) : n(n), a(arr) {
-    block = sqrt(n);  // 平方分块
-    cnt.assign(maxA + 1, 0);
-  }
-
-  void addQuery(int l, int r, int id) { qs.push_back({l, r, id}); }
-
-  // 添加一个元素
-  inline void add(int x) {
-    if (cnt[x]++ == 0) distinct++;
-  }
-
-  // 删除一个元素
-  inline void remove(int x) {
-    if (--cnt[x] == 0) distinct--;
-  }
-
-  std::vector<int> run() {
-    int m = qs.size();
-    ans.assign(m, 0);
-
-    std::sort(qs.begin(), qs.end(), [&](const Query& A, const Query& B) {
-      int blockA = A.l / block;
-      int blockB = B.l / block;
-      if (blockA != blockB) return blockA < blockB;
-      return (blockA & 1) ? (A.r < B.r) : (A.r > B.r);  // 奇偶优化
-    });
-
-    int L = 1, R = 0;  // 当前统计范围
-
-    for (auto& q : qs) {
-      while (L > q.l) add(a[--L]);
-      while (R < q.r) add(a[++R]);
-      while (L < q.l) remove(a[L++]);
-      while (R > q.r) remove(a[R--]);
-
-      ans[q.id] = distinct;
-    }
-
-    return ans;
-  }
-};
-}  // namespace MoAlgo
 
 // 数据结构库
 namespace DS {
@@ -807,10 +448,178 @@ class SegTree {
   // 查询区间 [L,R] 的和
   ll rangeQuery(int L, int R) { return query(1, 1, n, L, R); }
 };
+
+struct SqrtBlock {
+  int n, len, numBlocks;
+  std::vector<ll> a;     // 原数组
+  std::vector<ll> sum;   // 每块的和
+  std::vector<ll> lazy;  // 懒标记：整块加
+
+  SqrtBlock(int n) : n(n) {
+    len = std::sqrt(n) + 1;
+    numBlocks = (n + len - 1) / len;
+
+    a.assign(n + 1, 0);
+    sum.assign(numBlocks + 1, 0);
+    lazy.assign(numBlocks + 1, 0);
+  }
+
+  // 从数组构造
+  void build() {
+    for (int i = 1; i <= n; ++i) {
+      sum[(i - 1) / len] += a[i];
+    }
+  }
+
+  // 对块应用 lazy 标记
+  void push_down(int b) {
+    if (lazy[b] == 0) return;
+    int L = b * len + 1;
+    int R = std::min(n, (b + 1) * len);
+    for (int i = L; i <= R; ++i) a[i] += lazy[b];
+    lazy[b] = 0;
+  }
+
+  // 单点更新：a[x] = v
+  void point_update(int x, ll v) {
+    int b = (x - 1) / len;
+    push_down(b);
+    sum[b] += v - a[x];
+    a[x] = v;
+  }
+
+  // 区间加：对 [l, r] 所有加 k
+  void range_add(int l, int r, ll k) {
+    int bl = (l - 1) / len;
+    int br = (r - 1) / len;
+
+    if (bl == br) {
+      push_down(bl);
+      for (int i = l; i <= r; ++i) {
+        a[i] += k;
+        sum[bl] += k;
+      }
+      return;
+    }
+
+    // 左边块
+    push_down(bl);
+    for (int i = l; (i - 1) / len == bl; ++i) {
+      a[i] += k;
+      sum[bl] += k;
+    }
+
+    // 中间整块
+    for (int b = bl + 1; b < br; ++b) {
+      lazy[b] += k;
+      sum[b] += k * len;
+    }
+
+    // 右边块
+    push_down(br);
+    for (int i = r; (i - 1) / len == br; --i) {
+      a[i] += k;
+      sum[br] += k;
+    }
+  }
+
+  // 区间查询：求 [l, r] 的和
+  ll range_query(int l, int r) {
+    ll res = 0;
+    int bl = (l - 1) / len;
+    int br = (r - 1) / len;
+
+    if (bl == br) {
+      push_down(bl);
+      for (int i = l; i <= r; ++i) res += a[i];
+      return res;
+    }
+
+    // 左边块散点
+    push_down(bl);
+    for (int i = l; (i - 1) / len == bl; ++i) res += a[i];
+
+    // 中间整块
+    for (int b = bl + 1; b < br; ++b) {
+      res += sum[b];
+    }
+
+    // 右边块散点
+    push_down(br);
+    for (int i = r; (i - 1) / len == br; --i) res += a[i];
+
+    return res;
+  }
+};
+
 }  // namespace DS
+
+// 莫队库
+namespace MoAlgo {
+
+// 查询条件
+struct Query {
+  int l, r, id;
+};
+
+// 区间不同个数统计
+struct Mo {
+  int n;                  // 数组大小
+  int block;              // 块大小
+  std::vector<int> a;     // 原数组
+  std::vector<Query> qs;  // 查询
+  std::vector<int> cnt,
+      ans;           // 计数数组与答案 cnt记录当前统计范围 元素值 的个数
+  int distinct = 0;  // 当前答案
+
+  Mo(int n, const std::vector<int>& arr, int maxA) : n(n), a(arr) {
+    block = sqrt(n);  // 平方分块
+    cnt.assign(maxA + 1, 0);
+  }
+
+  void addQuery(int l, int r, int id) { qs.push_back({l, r, id}); }
+
+  // 添加一个元素
+  inline void add(int x) {
+    if (cnt[x]++ == 0) distinct++;
+  }
+
+  // 删除一个元素
+  inline void remove(int x) {
+    if (--cnt[x] == 0) distinct--;
+  }
+
+  std::vector<int> run() {
+    int m = qs.size();
+    ans.assign(m, 0);
+
+    std::sort(qs.begin(), qs.end(), [&](const Query& A, const Query& B) {
+      int blockA = A.l / block;
+      int blockB = B.l / block;
+      if (blockA != blockB) return blockA < blockB;
+      return (blockA & 1) ? (A.r < B.r) : (A.r > B.r);  // 奇偶优化
+    });
+
+    int L = 1, R = 0;  // 当前统计范围
+
+    for (auto& q : qs) {
+      while (L > q.l) add(a[--L]);
+      while (R < q.r) add(a[++R]);
+      while (L < q.l) remove(a[L++]);
+      while (R > q.r) remove(a[R--]);
+
+      ans[q.id] = distinct;
+    }
+
+    return ans;
+  }
+};
+
+}  // namespace MoAlgo
 
 // 字符串库
 namespace Str {
+
 // 一维滚动Hash
 class StringHash1D {
  private:
@@ -964,7 +773,195 @@ class Trie {
     return ans;
   }
 };
+
 }  // namespace Str
 
 // 图论相关
 namespace Graph {}
+
+// 数学库
+namespace Math {
+
+// 大数运算
+class BigInt {
+ private:
+  string num;     // 存储数字，正数形式
+  bool negative;  // 是否为负数
+
+  // 内部辅助函数：比较两个正数的大小
+  static int compareAbs(const string& a, const string& b) {
+    if (a.size() != b.size()) return a.size() > b.size() ? 1 : -1;
+    for (size_t i = 0; i < a.size(); ++i) {
+      if (a[i] != b[i]) return a[i] > b[i] ? 1 : -1;
+    }
+    return 0;
+  }
+
+  // 内部辅助函数：正数加法
+  static string addStrings(const string& a, const string& b) {
+    string A = a, B = b;
+    if (A.size() < B.size()) std::swap(A, B);
+    std::reverse(A.begin(), A.end());
+    std::reverse(B.begin(), B.end());
+    int carry = 0;
+    string res;
+    for (size_t i = 0; i < A.size(); ++i) {
+      int sum = A[i] - '0' + carry;
+      if (i < B.size()) sum += B[i] - '0';
+      res += (sum % 10) + '0';
+      carry = sum / 10;
+    }
+    if (carry) res += carry + '0';
+    std::reverse(res.begin(), res.end());
+    return res;
+  }
+
+  // 内部辅助函数：正数减法 (a >= b)
+  static string subStrings(const string& a, const string& b) {
+    string A = a, B = b;
+    std::reverse(A.begin(), A.end());
+    std::reverse(B.begin(), B.end());
+    int borrow = 0;
+    string res;
+    for (size_t i = 0; i < A.size(); ++i) {
+      int diff = A[i] - '0' - borrow;
+      if (i < B.size()) diff -= B[i] - '0';
+      if (diff < 0) {
+        diff += 10;
+        borrow = 1;
+      } else
+        borrow = 0;
+      res += diff + '0';
+    }
+    while (res.size() > 1 && res.back() == '0') res.pop_back();
+    std::reverse(res.begin(), res.end());
+    return res;
+  }
+
+ public:
+  // 构造函数
+  BigInt(ll x = 0) {
+    if (x < 0) {
+      negative = true;
+      x = -x;
+    } else {
+      negative = false;
+    }
+    num = std::to_string(x);
+  }
+
+  BigInt(const string& s) {
+    if (s[0] == '-') {
+      negative = true;
+      num = s.substr(1);
+    } else {
+      negative = false;
+      num = s;
+    }
+  }
+
+  // 输出字符串
+  string toString() const { return (negative && num != "0" ? "-" : "") + num; }
+
+  // 加法
+  BigInt operator+(const BigInt& b) const {
+    if (negative == b.negative)
+      return BigInt((negative ? "-" : "") + addStrings(num, b.num));
+    else {
+      int cmp = compareAbs(num, b.num);
+      if (cmp == 0) return BigInt(0);
+      if (cmp > 0)
+        return BigInt((negative ? "-" : "") + subStrings(num, b.num));
+      else
+        return BigInt((b.negative ? "-" : "") + subStrings(b.num, num));
+    }
+  }
+
+  // 减法
+  BigInt operator-(const BigInt& b) const {
+    BigInt temp = b;
+    temp.negative = !temp.negative;
+    return *this + temp;
+  }
+
+  // 乘法
+  BigInt operator*(const BigInt& b) const {
+    std::vector<int> res(num.size() + b.num.size(), 0);
+    string A = num, B = b.num;
+    std::reverse(A.begin(), A.end());
+    std::reverse(B.begin(), B.end());
+    for (size_t i = 0; i < A.size(); ++i)
+      for (size_t j = 0; j < B.size(); ++j)
+        res[i + j] += (A[i] - '0') * (B[j] - '0');
+    for (size_t i = 0; i < res.size(); ++i) {
+      if (res[i] >= 10) {
+        res[i + 1] += res[i] / 10;
+        res[i] %= 10;
+      }
+    }
+    while (res.size() > 1 && res.back() == 0) res.pop_back();
+    string ans;
+    for (int i = res.size() - 1; i >= 0; --i) ans += res[i] + '0';
+    BigInt result(ans);
+    result.negative = negative != b.negative && ans != "0";
+    return result;
+  }
+
+  // 除法 (大数 / int)
+  BigInt operator/(int b) const {
+    string res;
+    int r = 0;
+    for (char c : num) {
+      r = r * 10 + (c - '0');
+      res += (r / b) + '0';
+      r %= b;
+    }
+    size_t pos = res.find_first_not_of('0');
+    if (pos != string::npos)
+      res = res.substr(pos);
+    else
+      res = "0";
+    BigInt result(res);
+    result.negative = negative && res != "0";
+    return result;
+  }
+
+  // 取模 (大数 % int)
+  int operator%(int b) const {
+    int r = 0;
+    for (char c : num) r = (r * 10 + (c - '0')) % b;
+    return negative ? -r : r;
+  }
+
+  // 比较运算符
+  bool operator<(const BigInt& b) const {
+    if (negative != b.negative) return negative;
+    int cmp = compareAbs(num, b.num);
+    return negative ? cmp > 0 : cmp < 0;
+  }
+
+  bool operator>(const BigInt& b) const { return b < *this; }
+  bool operator<=(const BigInt& b) const { return !(*this > b); }
+  bool operator>=(const BigInt& b) const { return !(*this < b); }
+  bool operator==(const BigInt& b) const {
+    return num == b.num && negative == b.negative;
+  }
+  bool operator!=(const BigInt& b) const { return !(*this == b); }
+};
+
+// 快速幂 计算 a^b % mod
+ll qpow(ll a, ll b, ll mod) {
+  ll res = 1;
+  a %= mod;  // 先对底数取模，防止溢出
+
+  while (b) {
+    if (b & 1) res = res * a % mod;  // 如果当前位是1，则乘上a
+    a = a * a % mod;                 // a 每轮平方
+    b >>= 1;                         // b 右移一位，相当于除以2
+  }
+  return res;
+}
+
+// gcd 最大公约数
+int gcd(int a, int b) { return b == 0 ? a : gcd(b, a % b); }
+}  // namespace Math
