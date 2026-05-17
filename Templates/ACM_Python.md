@@ -1440,7 +1440,95 @@ class SparseTable:
         return min(self.st_min[l][k], self.st_min[r - (1 << k) + 1][k])
 ```
 
-### 树状数组（BIT）
+
+
+
+#### 二维ST表
+```python
+class SparseTable2D:
+    def __init__(self, mat):
+        self.n = len(mat)
+        self.m = len(mat[0]) if self.n else 0
+
+        # 预处理 log2 数组（和一维完全一样）
+        max_len = max(self.n, self.m)
+        self.log = [0] * (max_len + 1)
+        for i in range(2, max_len + 1):
+            self.log[i] = self.log[i // 2] + 1
+
+        # 行、列最大层数
+        k1 = self.log[self.n] + 1
+        k2 = self.log[self.m] + 1
+
+        # st_max[i][j][p][q]：从(i,j)开始，行2^p，列2^q 的最大值
+        # st_min同理
+        self.st_max = [[[[0]*k2 for _ in range(k1)] for __ in range(self.m)] for ___ in range(self.n)]
+        self.st_min = [[[[0]*k2 for _ in range(k1)] for __ in range(self.m)] for ___ in range(self.n)]
+
+        # 初始化 p=0,q=0（长度为1）
+        for i in range(self.n):
+            for j in range(self.m):
+                self.st_max[i][j][0][0] = mat[i][j]
+                self.st_min[i][j][0][0] = mat[i][j]
+
+        # 先枚举行方向 p
+        p = 1
+        while (1 << p) <= self.n:
+            for i in range(self.n - (1 << p) + 1):
+                for j in range(self.m):
+                    self.st_max[i][j][p][0] = max(
+                        self.st_max[i][j][p-1][0],
+                        self.st_max[i + (1 << (p-1))][j][p-1][0]
+                    )
+                    self.st_min[i][j][p][0] = min(
+                        self.st_min[i][j][p-1][0],
+                        self.st_min[i + (1 << (p-1))][j][p-1][0]
+                    )
+            p += 1
+
+        # 再枚举列方向 q
+        q = 1
+        while (1 << q) <= self.m:
+            for p in range(k1):
+                for i in range(self.n - (1 << p) + 1):
+                    for j in range(self.m - (1 << q) + 1):
+                        self.st_max[i][j][p][q] = max(
+                            self.st_max[i][j][p][q-1],
+                            self.st_max[i][j + (1 << (q-1))][p][q-1]
+                        )
+                        self.st_min[i][j][p][q] = min(
+                            self.st_min[i][j][p][q-1],
+                            self.st_min[i][j + (1 << (q-1))][p][q-1]
+                        )
+            q += 1
+
+    # 查询矩形 [x1,y1] ~ [x2,y2] 最大值，闭区间，0下标
+    def query_max(self, x1, y1, x2, y2):
+        kx = self.log[x2 - x1 + 1]
+        ky = self.log[y2 - y1 + 1]
+        return max(
+            self.st_max[x1][y1][kx][ky],
+            self.st_max[x2 - (1<<kx) + 1][y1][kx][ky],
+            self.st_max[x1][y2 - (1<<ky) + 1][kx][ky],
+            self.st_max[x2 - (1<<kx) + 1][y2 - (1<<ky) + 1][kx][ky]
+        )
+
+    # 查询最小值
+    def query_min(self, x1, y1, x2, y2):
+        kx = self.log[x2 - x1 + 1]
+        ky = self.log[y2 - y1 + 1]
+        return min(
+            self.st_min[x1][y1][kx][ky],
+            self.st_min[x2 - (1<<kx) + 1][y1][kx][ky],
+            self.st_min[x1][y2 - (1<<ky) + 1][kx][ky],
+            self.st_min[x2 - (1<<kx) + 1][y2 - (1<<ky) + 1][kx][ky]
+        )
+```
+
+
+
+
+### 树状数组
 
 - 前缀和算法
 - 下标进行二进制拆分
@@ -2182,6 +2270,114 @@ root
 
 
 ### 后缀数组
+```python
+def get_sa(s):
+    n = len(s)
+    sa = list(range(n))        # 后缀数组：排序后后缀的起始下标
+    rank = [ord(c) for c in s] # 排名数组：字符转 ASCII 码，初始排名根据ascii码值
+    tmp = [0] * n              # 临时数组，用于更新 rank
+    k = 1                      # 当前倍增的长度：1,2,4,8...
+
+    # 倍增法构造后缀数组（sa、rank）
+    while k <= n:
+        # 排序依据：(当前段排名，下一段排名)
+        def key_func(i):
+            r1 = rank[i]
+            r2 = rank[i + k] if (i + k) < n else -1
+            return (r1, r2)
+
+        sa.sort(key=key_func)  # 对后缀按双关键字排序
+
+        # 给排序后的后缀重新分配排名
+        tmp[sa[0]] = 0
+        for i in range(1, n):
+            # 和前一个后缀的 key 不同，排名 +1
+            if key_func(sa[i]) != key_func(sa[i-1]):
+                tmp[sa[i]] = tmp[sa[i-1]] + 1
+            else:
+                tmp[sa[i]] = tmp[sa[i-1]]
+        rank, tmp = tmp, rank
+        k <<= 1  # k *= 2
+
+    # 构造 height 数组：相邻排名后缀的最长公共前缀长度 LCP
+    height = [0] * n
+    h = 0
+    for i in range(n): # 遍历字符串（下标，正因为遍历的是下标，所以才能使用h-1优化）
+        if rank[i] == 0: # 没有前一个排名
+            h = 0
+            continue
+
+        j = sa[rank[i] - 1]  # 前一个排名的后缀起始位置
+        # 计算两个后缀的公共长度
+        while i + h < n and j + h < n and s[i + h] == s[j + h]:
+            h += 1
+        height[rank[i]] = h
+
+        # 下次 h 至少从 h-1 开始（优化）
+        if h > 0:
+            h -= 1
+    return sa, rank, height
+
+# 数组版本
+def get_sa(arr):
+    n = len(arr)
+    sa = list(range(n))        # 后缀数组：排序后后缀的起始下标
+    rank = arr.copy()          # 排名数组：rank[i] = 后缀 i 的排名
+    tmp = [0] * n              # 临时数组，用于更新 rank
+    k = 1                      # 当前倍增的长度：1,2,4,8...
+
+    # 倍增法构造后缀数组
+    while k <= n:
+        # 排序依据：(当前段排名，下一段排名)
+        def key_func(i):
+            r1 = rank[i]
+            r2 = rank[i + k] if (i + k) < n else -1
+            return (r1, r2)
+
+        sa.sort(key=key_func)  # 对后缀按双关键字排序
+
+        # 给排序后的后缀重新分配排名
+        tmp[sa[0]] = 0
+        for i in range(1, n):
+            # 和前一个后缀的 key 不同，排名 +1
+            if key_func(sa[i]) != key_func(sa[i-1]):
+                tmp[sa[i]] = tmp[sa[i-1]] + 1
+            else:
+                tmp[sa[i]] = tmp[sa[i-1]]
+        rank, tmp = tmp, rank
+        k <<= 1  # k *= 2
+
+    # 构造 height 数组：相邻排名后缀的最长公共前缀长度 LCP
+    height = [0] * n
+    h = 0
+    for i in range(n):
+        if rank[i] == 0:
+            h = 0
+            continue
+
+        j = sa[rank[i] - 1]  # 前一个排名的后缀起始位置
+        # 计算两个后缀的公共长度
+        while i + h < n and j + h < n and arr[i + h] == arr[j + h]:
+            h += 1
+        height[rank[i]] = h
+
+        # 下次 h 至少从 h-1 开始（优化）
+        if h > 0:
+            h -= 1
+    return sa, rank, height
+```
+
+
+后缀数组3个核心数组：
+- 后缀数组 `sa[]`：`sa[i]` = 排名第 i 的后缀，在原字符串中的起始下标
+- 排名数组 `rank[]`：`rank[i]` = 原字符串下标 i 开头的后缀，排第几名
+    - 本质：sa 的逆数组，`sa[rank[i]] = i，rank[sa[i]] = i`
+- 高度数组 `height[]`：height[i] = 排名第 i 的后缀 和 排名第 i-1 的后缀 的最长公共前缀长度 LCP
+    - 本质：解决「重复子串、最长重复子串、子串出现次数」等问题的核心
+
+
+- 后缀数组的应用主要是遍历排名，根据排名字符串处理问题
+
 
 
 ### 后缀自动机
