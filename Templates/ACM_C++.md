@@ -557,13 +557,9 @@ vector<pair<int,int>> get_long_non_increasing(const vector<int>& arr) {
 2. 字符串贪心：
     - 删 k 个数字得最小数：单调栈 + 贪心
 
-### 枚举
 
 
-
-
-
-#### 双指针
+### 双指针
 ```cpp
 // 两数之和：给定一个升序排列的整数数组 nums 和一个目标值 target，从数组中找到两个数，使它们相加等于 target，返回两个数下标（下标从 1 开始）
 int l = 0, r = n - 1;

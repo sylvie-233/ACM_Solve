@@ -242,6 +242,21 @@ def bucket_sort(arr, bucket_size=5):
 
 分块排序
 
+#### 离散化
+```python
+def compress(values: list[int]):
+    """
+    离散化函数：输入任意整数/浮点数列表，返回 离散化字典 + 离散化后的值
+    返回：compressor, ranks
+        compressor: {原始值: 离散化下标(从1开始)}
+        ranks: 每个元素离散化后的下标
+    """
+    coords = sorted(set(values))
+    comp = {v: i + 1 for i, v in enumerate(coords)}  # 树状数组习惯从 1 开始
+    ranks = [comp[x] for x in values]
+    return comp, ranks
+```
+
 
 #### 连续非递增区间
 ```python
@@ -272,86 +287,7 @@ def get_long_non_increasing(arr):
     return result
 ```
 
-### 搜索
 
-#### DFS
-```python
-# 图的 DFS：邻接表表示，visited 记录访问过的节点
-def dfs_graph(u, graph, visited):
-    visited.add(u)
-    # 访问或处理 u
-    for v in graph[u]:
-        if v not in visited:
-            dfs_graph(v, graph, visited)
-
-# 示例用法（调用时初始化 visited 为空集合）：
-graph = {0: [1,2], 1: [0,2], 2: [0,1]}  # 无向图邻接表
-visited = set()
-dfs_graph(0, graph, visited)
-```
-
-DFS（深度优先搜索）
-
-
-#### BFS
-```python
-from collections import deque
-# 图的 BFS：邻接表表示
-def bfs_graph(start, graph):
-    visited = set([start])
-    q = deque([start])
-    while q:
-        u = q.popleft()
-        # 访问或处理 u
-        for v in graph[u]:
-            if v not in visited:
-                visited.add(v)
-                q.append(v)
-    # 返回 visited 或其它结果
-
-# 示例用法：
-graph = {0: [1,2], 1: [0,3], 2: [0], 3: [1]}
-bfs_graph(0, graph)
-```
-
-BFS（广度优先搜索）
-
-
-
-#### 双向BFS
-```python
-from collections import deque
-def bidirectional_bfs(adj, start, goal):
-    if start == goal: return 0
-    visited_s = {start:0}
-    visited_g = {goal:0}
-    q_s = deque([start]); q_g = deque([goal])
-    while q_s and q_g:
-        # 向前扩展一层
-        for _ in range(len(q_s)):
-            u = q_s.popleft()
-            for v in adj[u]:
-                if v not in visited_s:
-                    visited_s[v] = visited_s[u] + 1
-                    if v in visited_g:
-                        return visited_s[v] + visited_g[v]
-                    q_s.append(v)
-        # 向后扩展一层
-        for _ in range(len(q_g)):
-            u = q_g.popleft()
-            for v in adj[u]:
-                if v not in visited_g:
-                    visited_g[v] = visited_g[u] + 1
-                    if v in visited_s:
-                        return visited_s[v] + visited_g[v]
-                    q_g.append(v)
-    return -1  # 不可达时返回 -1
-```
-
-双向 BFS：同时从起点和终点向中间搜索，适用于无权图最短路径查找，可大幅降低搜索空间
-
-
-#### 记忆化搜索
 
 
 ### 贪心
@@ -579,46 +515,7 @@ class Difference:
 ```
 
 
-### 分块
 
-
-
-#### 单点修改 & 区间求和
-```python
-import math
-
-class SqrtDecomposition:
-    def __init__(self, data):
-        self.n = len(data)
-        # 块大小
-        self.block_size = int(math.sqrt(self.n)) + 1
-        self.data = list(data)
-        self.blocks = [0] * self.block_size
-
-        # 初始化分块
-        for i in range(self.n):
-            self.blocks[i // self.block_size] += self.data[i]
-
-    def update(self, idx, val):
-        """将位置 idx 的值改为 val"""
-        block_idx = idx // self.block_size
-        self.blocks[block_idx] += val - self.data[idx]
-        self.data[idx] = val
-
-    def query(self, l, r):
-        """查询区间 [l, r] 的和"""
-        res = 0
-        while l <= r:
-            # 整块移动，如果 l 在块起点，且整个块都在 [l, r] 内
-            if l % self.block_size == 0 and l + self.block_size - 1 <= r:
-                res += self.blocks[l // self.block_size]
-                l += self.block_size
-            # 逐步移动
-            else:
-                res += self.data[l]
-                l += 1
-        return res
-```
 
 
 
@@ -652,32 +549,6 @@ def jump_by_power(arr, start, steps):
                 break
     return pos
 ```
-
-
-
-### 离散化
-```python
-def compress(values: list[int]):
-    """
-    离散化函数：输入任意整数/浮点数列表，返回 离散化字典 + 离散化后的值
-    返回：compressor, ranks
-        compressor: {原始值: 离散化下标(从1开始)}
-        ranks: 每个元素离散化后的下标
-    """
-    coords = sorted(set(values))
-    comp = {v: i + 1 for i, v in enumerate(coords)}  # 树状数组习惯从 1 开始
-    ranks = [comp[x] for x in values]
-    return comp, ranks
-```
-
-
-### 离线处理
-
-#### 莫队
-
-
-#### CDQ
-
 
 
 ### 偏序
@@ -739,6 +610,9 @@ def partial_order_2d(points: list[tuple[int, int]]) -> int:
 ```
 
 求第一维递增，第二维非递减的最长偏序序列长度
+
+#### CDQ
+
 
 ### 随机算法
 
@@ -970,7 +844,7 @@ def reverseBetween(self, head: Optional[ListNode], left: int, right: int) -> Opt
 ![链表反转](../.assets/链表反转.png)
 
 
-### 二叉树
+### 简单二叉树
 ```python
 
 class TreeNode:
@@ -1124,7 +998,7 @@ class MedianFinder:
 ![对顶堆原理](../.assets/对顶堆原理.png)
 
 
-#### 可并堆
+#### 可并堆 / 左偏树
 ```python
 class LeftistNode:
     def __init__(self, val):
@@ -1759,37 +1633,296 @@ class SegmentTree:
 
 #### 0-1 线段树
 
+
 ### 二叉搜索树BST
 
 
 
-### Treap
+#### Treap
 
 Tree + Heap
 随机化平衡二叉搜索树
 
 
-### 伸展树Splay
+#### 伸展树Splay
 
 
+
+
+#### 红黑树
+
+#### 笛卡尔树
+#### 替罪羊树
+
+#### k-d树
+
+
+### 分块
+
+
+
+#### 单点修改 & 区间求和
+```python
+import math
+
+class BlockArray:
+    def __init__(self, data):
+        self.n = len(data)
+        # 块大小
+        self.block_size = int(math.sqrt(self.n)) + 1
+        self.data = list(data)
+        self.blocks = [0] * self.block_size
+
+        # 初始化分块
+        for i in range(self.n):
+            self.blocks[i // self.block_size] += self.data[i]
+
+    def update(self, idx, val):
+        """将位置 idx 的值改为 val"""
+        block_idx = idx // self.block_size
+        self.blocks[block_idx] += val - self.data[idx]
+        self.data[idx] = val
+
+    def query(self, l, r):
+        """查询区间 [l, r] 的和"""
+        res = 0
+        while l <= r:
+            # 整块移动，如果 l 在块起点，且整个块都在 [l, r] 内
+            if l % self.block_size == 0 and l + self.block_size - 1 <= r:
+                res += self.blocks[l // self.block_size]
+                l += self.block_size
+            # 逐步移动
+            else:
+                res += self.data[l]
+                l += 1
+        return res
+```
+
+
+#### 区间修改 & 区间个数查询
+```python
+import math
+from collections import defaultdict
+
+class BlockArray:
+    def __init__(self, arr: l[int]):
+        """
+        初始化分块结构
+        arr: 原始数组
+        """
+        self.n = len(arr)
+        self.block_size = max(1, int(math.sqrt(self.n)))
+        self.block_cnt = (self.n + self.block_size - 1) // self.block_size
+        
+        # 原始数组（支持修改）
+        self.arr = arr[:]
+        
+        # 每块的懒标记（整块加法的累积值）
+        self.lazy = [0] * self.block_cnt
+        
+        # 每块内值的频率统计（存储的是原始值，未加懒标记）
+        self.freq = [defaultdict(int) for _ in range(self.block_cnt)]
+        
+        # 构建频率表
+        for i, val in enumerate(self.arr):
+            bid = self._get_block_id(i)
+            self.freq[bid][val] += 1
+    
+    def _get_block_id(self, idx: int) -> int:
+        """获取索引所在的块ID"""
+        return idx // self.block_size
+    
+    def _rebuild(self, bid: int):
+        """
+        重构第bid块：将懒标记应用到实际元素上，并重建频率表
+        """
+        if self.lazy[bid] == 0:
+            return
+        
+        # 将懒标记应用到块内所有元素
+        left = bid * self.block_size
+        right = min((bid + 1) * self.block_size, self.n)
+        for i in range(left, right):
+            self.arr[i] += self.lazy[bid]
+        
+        # 重建频率表
+        self.freq[bid].clear()
+        for i in range(left, right):
+            self.freq[bid][self.arr[i]] += 1
+        
+        # 重置懒标记
+        self.lazy[bid] = 0
+    
+    def range_add(self, l: int, r: int, val: int):
+        """
+        区间修改：[l, r] 内所有元素增加 val（闭区间）
+        """
+        left_bid = self._get_block_id(l)
+        right_bid = self._get_block_id(r)
+        
+        if left_bid == right_bid:
+            # 在同一块内：暴力修改
+            self._rebuild(left_bid)
+            for i in range(l, r + 1):
+                old_val = self.arr[i]
+                self.freq[left_bid][old_val] -= 1
+                if self.freq[left_bid][old_val] == 0:
+                    del self.freq[left_bid][old_val]
+                
+                new_val = old_val + val
+                self.arr[i] = new_val
+                self.freq[left_bid][new_val] += 1
+        else:
+            # 左边界块（不完整）
+            self._rebuild(left_bid)
+            left_boundary_end = (left_bid + 1) * self.block_size
+            for i in range(l, min(left_boundary_end, self.n)):
+                old_val = self.arr[i]
+                self.freq[left_bid][old_val] -= 1
+                if self.freq[left_bid][old_val] == 0:
+                    del self.freq[left_bid][old_val]
+                
+                new_val = old_val + val
+                self.arr[i] = new_val
+                self.freq[left_bid][new_val] += 1
+            
+            # 中间完整块：只更新懒标记
+            for bid in range(left_bid + 1, right_bid):
+                self.lazy[bid] += val
+            
+            # 右边界块（不完整）
+            self._rebuild(right_bid)
+            right_boundary_start = right_bid * self.block_size
+            for i in range(right_boundary_start, r + 1):
+                old_val = self.arr[i]
+                self.freq[right_bid][old_val] -= 1
+                if self.freq[right_bid][old_val] == 0:
+                    del self.freq[right_bid][old_val]
+                
+                new_val = old_val + val
+                self.arr[i] = new_val
+                self.freq[right_bid][new_val] += 1
+    
+    def query_count(self, l: int, r: int, target: int) -> int:
+        """
+        查询区间 [l, r] 内值为 target 的个数
+        """
+        left_bid = self._get_block_id(l)
+        right_bid = self._get_block_id(r)
+        res = 0
+        
+        if left_bid == right_bid:
+            # 在同一块内：暴力统计
+            self._rebuild(left_bid)
+            for i in range(l, r + 1):
+                if self.arr[i] == target:
+                    res += 1
+        else:
+            # 左边界块（不完整）
+            self._rebuild(left_bid)
+            left_boundary_end = (left_bid + 1) * self.block_size
+            for i in range(l, min(left_boundary_end, self.n)):
+                if self.arr[i] == target:
+                    res += 1
+            
+            # 中间完整块：实际值 = 存储值 + lazy
+            for bid in range(left_bid + 1, right_bid):
+                actual_target = target - self.lazy[bid]
+                if actual_target in self.freq[bid]:
+                    res += self.freq[bid][actual_target]
+            
+            # 右边界块（不完整）
+            self._rebuild(right_bid)
+            right_boundary_start = right_bid * self.block_size
+            for i in range(right_boundary_start, r + 1):
+                if self.arr[i] == target:
+                    res += 1
+        
+        return res
+    
+    def get_value(self, idx: int) -> int:
+        """单点查询（用于调试）"""
+        bid = self._get_block_id(idx)
+        self._rebuild(bid)
+        return self.arr[idx]
+    
+    def __str__(self) -> str:
+        """打印数组当前状态（用于调试）"""
+        # 需要先应用所有懒标记
+        for bid in range(self.block_cnt):
+            self._rebuild(bid)
+        return str(self.arr)
+
+
+# ============ 测试代码 ============
+if __name__ == "__main__":
+    # 测试1：基本功能
+    arr = [1, 2, 3, 1, 2, 3, 1, 2, 3]
+    ba = BlockArray(arr)
+    
+    print("初始数组:", ba)
+    print("查询区间[0,8]中值为2的个数:", ba.query_count(0, 8, 2))  # 3
+    
+    # 区间修改
+    ba.range_add(2, 6, 1)  # 索引2~6加1
+    print("修改后数组:", ba)
+    # 预期: [1,2,4,2,3,4,1,2,3]
+    
+    print("查询区间[0,8]中值为2的个数:", ba.query_count(0, 8, 2))  # 3
+    print("查询区间[0,8]中值为3的个数:", ba.query_count(0, 8, 3))  # 2
+    print("查询区间[2,5]中值为4的个数:", ba.query_count(2, 5, 4))  # 2
+    
+    # 测试2：多次操作
+    print("\n=== 测试2 ===")
+    arr2 = [5, 5, 5, 5, 5]
+    ba2 = BlockArray(arr2)
+    print("初始:", ba2)
+    
+    ba2.range_add(1, 3, 2)
+    print("区间[1,3]+2:", ba2)  # [5,7,7,7,5]
+    
+    print("查询值为7的个数:", ba2.query_count(0, 4, 7))  # 3
+    
+    ba2.range_add(0, 4, -2)
+    print("全局-2:", ba2)  # [3,5,5,5,3]
+    
+    print("查询值为5的个数:", ba2.query_count(0, 4, 5))  # 3
+    
+    # 测试3：边界情况
+    print("\n=== 测试3 ===")
+    arr3 = [1, 2, 3]
+    ba3 = BlockArray(arr3)
+    ba3.range_add(0, 2, 10)
+    print(ba3)  # [11,12,13]
+    print("查询值为11的个数:", ba3.query_count(0, 2, 11))  # 1
+    print("查询值为12的个数:", ba3.query_count(0, 2, 12))  # 1
+```
+
+
+
+### 莫队
+
+
+
+### 珂朵莉树ODT
 
 ### 动态树LCT
 
 
 
-### 红黑树
 
 
 
-### 替罪羊树
 
 
 
-### k-d树
 
-### 珂朵莉树ODT
 
-### 笛卡尔树
+
+
+
+
+
 
 
 
@@ -2696,6 +2829,85 @@ add_edge(1, 2, 5)
 
 
 #### 链式前向星
+
+
+### 搜索
+
+#### DFS
+```python
+# 图的 DFS：邻接表表示，visited 记录访问过的节点
+def dfs_graph(u, graph, visited):
+    visited.add(u)
+    # 访问或处理 u
+    for v in graph[u]:
+        if v not in visited:
+            dfs_graph(v, graph, visited)
+
+# 示例用法（调用时初始化 visited 为空集合）：
+graph = {0: [1,2], 1: [0,2], 2: [0,1]}  # 无向图邻接表
+visited = set()
+dfs_graph(0, graph, visited)
+```
+
+DFS（深度优先搜索）
+
+
+#### BFS
+```python
+from collections import deque
+# 图的 BFS：邻接表表示
+def bfs_graph(start, graph):
+    visited = set([start])
+    q = deque([start])
+    while q:
+        u = q.popleft()
+        # 访问或处理 u
+        for v in graph[u]:
+            if v not in visited:
+                visited.add(v)
+                q.append(v)
+    # 返回 visited 或其它结果
+
+# 示例用法：
+graph = {0: [1,2], 1: [0,3], 2: [0], 3: [1]}
+bfs_graph(0, graph)
+```
+
+BFS（广度优先搜索）
+
+
+
+#### 双向BFS
+```python
+from collections import deque
+def bidirectional_bfs(adj, start, goal):
+    if start == goal: return 0
+    visited_s = {start:0}
+    visited_g = {goal:0}
+    q_s = deque([start]); q_g = deque([goal])
+    while q_s and q_g:
+        # 向前扩展一层
+        for _ in range(len(q_s)):
+            u = q_s.popleft()
+            for v in adj[u]:
+                if v not in visited_s:
+                    visited_s[v] = visited_s[u] + 1
+                    if v in visited_g:
+                        return visited_s[v] + visited_g[v]
+                    q_s.append(v)
+        # 向后扩展一层
+        for _ in range(len(q_g)):
+            u = q_g.popleft()
+            for v in adj[u]:
+                if v not in visited_g:
+                    visited_g[v] = visited_g[u] + 1
+                    if v in visited_s:
+                        return visited_s[v] + visited_g[v]
+                    q_g.append(v)
+    return -1  # 不可达时返回 -1
+```
+
+双向 BFS：同时从起点和终点向中间搜索，适用于无权图最短路径查找，可大幅降低搜索空间
 
 
 ### 拓扑排序
