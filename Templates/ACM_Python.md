@@ -2627,6 +2627,43 @@ for i in range(N):
         k <<= 1
 ```
 
+#### 混合背包
+```python
+def mix_knapsack(capacity, goods):
+    # capacity = 背包最大容量
+    # goods 格式：(重量w, 价值v, 类型type)
+    # type: 0=无限个, 1=1个, ≥2=数量
+    
+    dp = [0] * (capacity + 1)
+    
+    for w, v, typ in goods:
+        # 完全背包：无限个 → 正序遍历
+        if typ == 0:
+            for j in range(w, capacity + 1):
+                dp[j] = max(dp[j], dp[j - w] + v)
+                
+        # 01背包：1个 → 逆序遍历
+        elif typ == 1:
+            for j in range(capacity, w - 1, -1):
+                dp[j] = max(dp[j], dp[j - w] + v)
+                
+        # 多重背包：有限个 → 二进制优化 + 逆序
+        else:
+            cnt = typ
+            k = 1
+            while cnt > 0:
+                take = min(k, cnt)
+                tw = take * w
+                tv = take * v
+                for j in range(capacity, tw - 1, -1):
+                    dp[j] = max(dp[j], dp[j - tw] + tv)
+                cnt -= take
+                k <<= 1
+    
+    return dp[capacity]
+```
+
+
 #### 分组背包
 
 
