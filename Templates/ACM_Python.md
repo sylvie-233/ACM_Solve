@@ -3812,7 +3812,27 @@ for num in nums:
 
 
 #### 卡特兰数
+```python
+def catalan(n: int) -> int:
+    """
+    公式法计算第 n 个卡特兰数
+    :param n: 非负整数
+    :return: 卡特兰数 Cn
+    """
+    if n < 0:
+        return 0
+    res = 1
+    # 计算组合数 C(2n, n) // (n+1)
+    for i in range(1, n+1):
+        res = res * (n + i) // i
+    res = res // (n + 1)
+    return res
+```
 
+卡特兰数：
+$$
+C_n = \frac{1}{n+1}\binom{2n}{n}
+$$
 
 
 #### 默慈金数
