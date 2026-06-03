@@ -1462,11 +1462,6 @@ class BIT:
 ```
 
 #### 二维树状数组
-
-
-维护多个树状数组（BIT），每个 BIT 维护一个值 x 在数组中出现的频率，支持：
-- 单点修改：将某个位置的值由旧值变成新值
-- 区间查询：快速查询某个值 x 在区间 [l, r] 中出现次数
 ```python
 class MultiValueBIT:
     def __init__(self, data, max_val):
@@ -1530,8 +1525,114 @@ class MultiValueBIT:
 ```
 
 
+维护多个树状数组（BIT），每个 BIT 维护一个值 x 在数组中出现的频率，支持：
+- 单点修改：将某个位置的值由旧值变成新值
+- 区间查询：快速查询某个值 x 在区间 [l, r] 中出现次数
+
 
 ### 线段树
+
+
+#### 单点修改 & 区间查询
+```python
+class SegmentTree:
+    # 下标从 0 开始
+    def __init__(self, data):
+        self.n = len(data)
+        self.sum = [0] * (4 * self.n)
+        self.max = [0] * (4 * self.n)
+        self.min = [0] * (4 * self.n)
+        self._build(data, 0, 0, self.n - 1)
+
+    # 构建树
+    def _build(self, data, node, l, r):
+        if l == r:
+            self.sum[node] = self.max[node] = self.min[node] = data[l]
+        else:
+            mid = (l + r) // 2
+            left_node = node * 2 + 1
+            right_node = node * 2 + 2
+            self._build(data, left_node, l, mid)
+            self._build(data, right_node, mid + 1, r)
+            self._push_up(node)
+
+    # 向上合并
+    def _push_up(self, node):
+        left = node * 2 + 1
+        right = node * 2 + 2
+        
+        self.sum[node] = self.sum[left] + self.sum[right]
+        self.max[node] = max(self.max[left], self.max[right])
+        self.min[node] = min(self.min[left], self.min[right])
+
+    # ------------------- 单点修改 -------------------
+    def update_point(self, idx, val):
+        # 将下标 idx 的值修改为 val
+        self._update_point(0, 0, self.n - 1, idx, val)
+
+    def _update_point(self, node, l, r, idx, val):
+        if l == r:
+            # 叶子节点，直接更新
+            self.sum[node] = self.max[node] = self.min[node] = val
+            return
+        
+        mid = (l + r) // 2
+        if idx <= mid:
+            self._update_point(node * 2 + 1, l, mid, idx, val)
+        else:
+            self._update_point(node * 2 + 2, mid + 1, r, idx, val)
+        
+        # 更新完子节点后，向上合并
+        self._push_up(node)
+
+    # ------------------- 区间查询 -------------------
+    def query_sum(self, ql, qr):
+        return self._query(ql, qr, 'sum')
+
+    def query_max(self, ql, qr):
+        return self._query(ql, qr, 'max')
+
+    def query_min(self, ql, qr):
+        return self._query(ql, qr, 'min')
+
+    def _query(self, ql, qr, typ):
+        return self._query_rec(0, 0, self.n - 1, ql, qr, typ)
+
+    def _query_rec(self, node, l, r, ql, qr, typ):
+        # 无交集
+        if qr < l or ql > r:
+            if typ == 'sum':
+                return 0
+            elif typ == 'max':
+                return float('-inf')
+            else:
+                return float('inf')
+        
+        # 完全包含
+        if ql <= l and r <= qr:
+            if typ == 'sum':
+                return self.sum[node]
+            elif typ == 'max':
+                return self.max[node]
+            else:
+                return self.min[node]
+
+        # 部分交集
+        mid = (l + r) // 2
+        left_res = self._query_rec(node * 2 + 1, l, mid, ql, qr, typ)
+        right_res = self._query_rec(node * 2 + 2, mid + 1, r, ql, qr, typ)
+
+        if typ == 'sum':
+            return left_res + right_res
+        elif typ == 'max':
+            return max(left_res, right_res)
+        else:
+            return min(left_res, right_res)
+```
+
+
+
+#### 区间修改 & 区间查询
 ```python
 class SegmentTree:
     # 下标范围（0~n-1）
@@ -1636,25 +1737,879 @@ class SegmentTree:
 
 ### 二叉搜索树BST
 
+#### AVL
+```python
+class Node:
+    def __init__(self, val):
+        self.val = val
+        self.left = None
+        self.right = None
+        self.height = 1
 
+class AVLTree:
+    def get_height(self, node):
+        return node.height if node else 0
+
+    def get_balance(self, node):
+        return self.get_height(node.left) - self.get_height(node.right) if node else 0
+
+    def left_rotate(self, z):
+        y = z.right
+        T2 = y.left
+
+        y.left = z
+        z.right = T2
+
+        z.height = 1 + max(self.get_height(z.left), self.get_height(z.right))
+        y.height = 1 + max(self.get_height(y.left), self.get_height(y.right))
+        return y
+
+    def right_rotate(self, z):
+        y = z.left
+        T3 = y.right
+
+        y.right = z
+        z.left = T3
+
+        z.height = 1 + max(self.get_height(z.left), self.get_height(z.right))
+        y.height = 1 + max(self.get_height(y.left), self.get_height(y.right))
+        return y
+
+    def insert(self, node, key):
+        # 1. 正常 BST 插入
+        if not node:
+            return Node(key)
+        if key < node.val:
+            node.left = self.insert(node.left, key)
+        elif key > node.val:
+            node.right = self.insert(node.right, key)
+        else:
+            return node
+
+        # 2. 更新高度
+        node.height = 1 + max(self.get_height(node.left), self.get_height(node.right))
+
+        # 3. 计算平衡因子
+        balance = self.get_balance(node)
+
+        # 4. 4 种不平衡情况
+        # LL
+        if balance > 1 and key < node.left.val:
+            return self.right_rotate(node)
+        # RR
+        if balance < -1 and key > node.right.val:
+            return self.left_rotate(node)
+        # LR
+        if balance > 1 and key > node.left.val:
+            node.left = self.left_rotate(node.left)
+            return self.right_rotate(node)
+        # RL
+        if balance < -1 and key < node.right.val:
+            node.right = self.right_rotate(node.right)
+            return self.left_rotate(node)
+
+        return node
+
+    def inorder(self, node, res):
+        if node:
+            self.inorder(node.left, res)
+            res.append(node.val)
+            self.inorder(node.right, res)
+
+# ------------------- 测试 -------------------
+if __name__=="__main__":
+    avl = AVLTree()
+    root = None
+
+    nums = [10, 20, 30, 40, 50, 25]
+    for num in nums:
+        root = avl.insert(root, num)
+
+    res = []
+    avl.inorder(root, res)
+    print("中序遍历（有序）:", res)  # 一定有序
+```
+
+AVL树：最早的自平衡二叉搜索树，靠 “左右子树高度差 ≤ 1” 强制平衡，所有操作 O (log n)
 
 #### Treap
+```python
+import random
+random.seed(42)
 
-Tree + Heap
-随机化平衡二叉搜索树
+class Node:
+    __slots__ = ["key", "pri", "cnt", "size", "l", "r"]
+    def __init__(self, key):
+        self.key = key          # 关键字
+        self.pri = random.randint(1, 10**9) # 随机优先级
+        self.cnt = 1            # 当前节点重复数
+        self.size = 1           # 子树总节点数
+        self.l = None           # 左子
+        self.r = None           # 右子
+
+class Treap:
+    def __init__(self):
+        self.root = None
+
+    def _upd(self, p):
+        """更新size：子树总数 = 左+右+自身cnt"""
+        if not p:
+            return
+        p.size = p.cnt
+        if p.l:
+            p.size += p.l.size
+        if p.r:
+            p.size += p.r.size
+
+    def _zig(self, p):
+        """右旋（p是父，左孩子上来）"""
+        lc = p.l
+        p.l = lc.r
+        lc.r = p
+        self._upd(p)
+        self._upd(lc)
+        return lc
+
+    def _zag(self, p):
+        """左旋（p是父，右孩子上来）"""
+        rc = p.r
+        p.r = rc.l
+        rc.l = p
+        self._upd(p)
+        self._upd(rc)
+        return rc
+
+    def _insert(self, p, key):
+        if not p:
+            return Node(key)
+        if key == p.key:
+            p.cnt += 1
+        elif key < p.key:
+            p.l = self._insert(p.l, key)
+            # 左儿子优先级更小 → 右旋
+            if p.l.pri < p.pri:
+                p = self._zig(p)
+        else:
+            p.r = self._insert(p.r, key)
+            # 右儿子优先级更小 → 左旋
+            if p.r.pri < p.pri:
+                p = self._zag(p)
+        self._upd(p)
+        return p
+
+    def insert(self, key):
+        self.root = self._insert(self.root, key)
+
+    def _del(self, p, key):
+        if not p:
+            return None
+        if key < p.key:
+            p.l = self._del(p.l, key)
+        elif key > p.key:
+            p.r = self._del(p.r, key)
+        else:
+            if p.cnt > 1:
+                p.cnt -= 1
+            else:
+                # 叶子 / 单孩子直接删
+                if not p.l or not p.r:
+                    return p.l if p.l else p.r
+                # 两个孩子，优先旋优先级小的上来
+                if p.l.pri < p.r.pri:
+                    p = self._zig(p)
+                    p.r = self._del(p.r, key)
+                else:
+                    p = self._zag(p)
+                    p.l = self._del(p.l, key)
+        self._upd(p)
+        return p
+
+    def delete(self, key):
+        self.root = self._del(self.root, key)
+
+    def get_rank(self, key):
+        """查询key是第几名(从小到大，重复算多个)，小于key的数量+1"""
+        res = 1
+        cur = self.root
+        while cur:
+            if key > cur.key:
+                res += (cur.l.size if cur.l else 0) + cur.cnt
+                cur = cur.r
+            else:
+                cur = cur.l
+        return res
+
+    def get_kth(self, k):
+        """查第k小数值"""
+        cur = self.root
+        while cur:
+            left_sz = cur.l.size if cur.l else 0
+            if k <= left_sz:
+                cur = cur.l
+            elif k <= left_sz + cur.cnt:
+                return cur.key
+            else:
+                k -= left_sz + cur.cnt
+                cur = cur.r
+        return None
+
+    def get_prev(self, key):
+        """前驱：<key的最大值"""
+        res = -float("inf")
+        cur = self.root
+        while cur:
+            if cur.key < key:
+                res = max(res, cur.key)
+                cur = cur.r
+            else:
+                cur = cur.l
+        return res if res != -float("inf") else None
+
+    def get_succ(self, key):
+        """后继：>key的最小值"""
+        res = float("inf")
+        cur = self.root
+        while cur:
+            if cur.key > key:
+                res = min(res, cur.key)
+                cur = cur.l
+            else:
+                cur = cur.r
+        return res if res != float("inf") else None
+```
+
+Treap = 二叉搜索树 (BST)+ 堆 (Heap) = 随机平衡树
+- BST 性质（按 key）：左 < 根 < 右 → 方便：前驱、后继、排名、第 k 大
+- 堆性质（随机 pri 优先级）：父 pri < 子 pri（小根堆） → 靠随机值 + 旋转自动平衡，避免 BST 退化链表
 
 
-#### 伸展树Splay
+Treap核心功能：
+- insert(x) 插入
+- delete(x) 删除一个
+- get_rank(x)：比 x 小的数个数 + 1 → x 排名
+- get_kth(k)：第 k 小元素
+- prev/succ：前驱 (＜x 最大)、后继 (＞x 最小)
 
 
+#### Splay
+```python
+class Node:
+    __slots__ = ['key', 'fa', 'l', 'r', 'size']
+    def __init__(self, key):
+        self.key = key
+        self.fa = self.l = self.r = None
+        self.size = 1
+
+class SplayTree:
+    def __init__(self):
+        self.root = None
+
+    def _update(self, x):
+        if x:
+            x.size = 1
+            if x.l: x.size += x.l.size
+            if x.r: x.size += x.r.size
+
+    def _is_left(self, x):
+        return x.fa and x.fa.l == x
+
+    def _rotate(self, x):
+        y = x.fa
+        z = y.fa
+        lft = self._is_left(x)
+
+        # 旋转核心
+        if lft:
+            y.l = x.r
+            if x.r: x.r.fa = y
+            x.r = y
+        else:
+            y.r = x.l
+            if x.l: x.l.fa = y
+            x.l = y
+
+        # 改父节点
+        y.fa = x
+        x.fa = z
+        if z:
+            if z.l == y: z.l = x
+            elif z.r == y: z.r = x
+
+        self._update(y)
+        self._update(x)
+
+    def _splay(self, x):
+        while x.fa:
+            y = x.fa
+            z = y.fa
+            if z: self._rotate(y if self._is_left(x) == self._is_left(y) else x)
+            self._rotate(x)
+        self.root = x
+
+    def _find_node(self, key):
+        cur = self.root
+        while cur and cur.key != key:
+            if key < cur.key: cur = cur.l
+            else: cur = cur.r
+        if cur: self._splay(cur)
+        return cur
+
+    def find(self, key):
+        return self._find_node(key) is not None
+
+    def insert(self, key):
+        # 找位置
+        p = None
+        cur = self.root
+        while cur:
+            p = cur
+            if key == cur.key:
+                self._splay(cur)
+                return
+            elif key < cur.key: cur = cur.l
+            else: cur = cur.r
+
+        # 新建节点
+        x = Node(key)
+        x.fa = p
+        if not p: self.root = x
+        elif key < p.key: p.l = x
+        else: p.r = x
+
+        self._splay(x)
+
+    def get_rank(self, key):
+        self._find_node(key)
+        return self.root.l.size + 1 if self.root.l else 1
+
+    def get_kth(self, k):
+        cur = self.root
+        while cur:
+            left = cur.l.size if cur.l else 0
+            if k == left + 1:
+                self._splay(cur)
+                return cur.key
+            elif k <= left:
+                cur = cur.l
+            else:
+                k -= left + 1
+                cur = cur.r
+        return None
+
+    def get_prev(self, key):
+        self._find_node(key)
+        if self.root.key < key: return self.root.key
+        cur = self.root.l
+        while cur and cur.r: cur = cur.r
+        self._splay(cur)
+        return cur.key if cur else None
+
+    def get_succ(self, key):
+        self._find_node(key)
+        if self.root.key > key: return self.root.key
+        cur = self.root.r
+        while cur and cur.l: cur = cur.l
+        self._splay(cur)
+        return cur.key if cur else None
+
+    def delete(self, key):
+        x = self._find_node(key)
+        if not x: return
+
+        # 把前驱旋到根，x变成右孩子，直接删
+        if not x.l:
+            self.root = x.r
+            if self.root: self.root.fa = None
+        elif not x.r:
+            self.root = x.l
+            if self.root: self.root.fa = None
+        else:
+            cur = x.l
+            while cur.r: cur = cur.r
+            self._splay(cur)
+            cur.r = x.r
+            if x.r: x.r.fa = cur
+            self.root = cur
+            cur.fa = None
+            self._update(self.root)
+```
+
+Splay伸展树，一种自平衡二叉搜索树
+Splay：每次访问一个节点，就把它通过旋转直接转到根节点
+
+
+Splay核心功能：
+- insert(x) 插入
+- delete(x) 删除
+- find(x) 是否存在
+- get_rank(x) 排名
+- get_kth(k) 第 k 小
+- get_prev(x) / get_succ(x) 前驱后继
+
+
+##### 文艺平衡树
+```python
+class Node:
+    __slots__ = ['key', 'fa', 'l', 'r', 'size', 'rev']
+    def __init__(self, key):
+        self.key = key          # 存储的值
+        self.fa = self.l = self.r = None  # 父、左、右
+        self.size = 1           # 子树大小
+        self.rev = False        # 翻转懒标记
+
+class SplayTree:
+    def __init__(self):
+        self.root = None
+
+    # 更新子树大小
+    def _update(self, x):
+        if x:
+            x.size = 1
+            if x.l: x.size += x.l.size
+            if x.r: x.size += x.r.size
+
+    # 下传翻转标记（核心！）
+    def _push_down(self, x):
+        if x and x.rev:
+            # 交换左右孩子
+            x.l, x.r = x.r, x.l
+            # 标记传给子节点
+            if x.l: x.l.rev ^= 1
+            if x.r: x.r.rev ^= 1
+            # 清除当前标记
+            x.rev = False
+
+    # 判断 x 是左儿子还是右儿子
+    def _is_left(self, x):
+        return x.fa and x.fa.l == x
+
+    # 单旋
+    def _rotate(self, x):
+        y = x.fa
+        z = y.fa
+        self._push_down(y)  # 旋转前先下传标记
+        self._push_down(x)
+        lft = self._is_left(x)
+
+        if lft:
+            y.l = x.r
+            if x.r: x.r.fa = y
+            x.r = y
+        else:
+            y.r = x.l
+            if x.l: x.l.fa = y
+            x.l = y
+
+        y.fa = x
+        x.fa = z
+        if z:
+            if z.l == y: z.l = x
+            elif z.r == y: z.r = x
+
+        self._update(y)
+        self._update(x)
+
+    # 伸展（核心）
+    def _splay(self, x):
+        while x.fa:
+            y = x.fa
+            z = y.fa
+            if z:
+                self._push_down(z)
+            self._push_down(y)
+            self._push_down(x)
+            if z:
+                self._rotate(y if self._is_left(x) == self._is_left(y) else x)
+            self._rotate(x)
+        self._push_down(x)
+        self.root = x
+
+    # 找到第 k 个节点并返回
+    def _get_kth_node(self, k):
+        cur = self.root
+        while True:
+            self._push_down(cur)
+            left = cur.l.size if cur.l else 0
+            if k == left + 1:
+                return cur
+            elif k <= left:
+                cur = cur.l
+            else:
+                k -= left + 1
+                cur = cur.r
+
+    # ---------------- 区间操作核心 ----------------
+    # 把 [l, r] 区间提取成一棵子树
+    def _get_range(self, l, r):
+        # 把 l-1 旋到根，r+1 旋到根的右孩子
+        # 则右孩子的左子树 = [l, r]
+        L = self._get_kth_node(l)
+        self._splay(L)
+        R = self._get_kth_node(r + 2)
+        self._splay(R)
+        return R.l
+
+    # 翻转区间 [l, r]
+    def reverse_range(self, l, r):
+        node = self._get_range(l, r)
+        node.rev ^= 1
+
+    # ---------------- 构建与遍历 ----------------
+    # 递归建树（快速初始化 1~n）
+    def _build(self, l, r, fa):
+        if l > r:
+            return None
+        mid = (l + r) // 2
+        cur = Node(mid)
+        cur.fa = fa
+        cur.l = self._build(l, mid - 1, cur)
+        cur.r = self._build(mid + 1, r, cur)
+        self._update(cur)
+        return cur
+
+    # 初始化：创建 1~n 的序列（前后加哨兵）
+    def build(self, n):
+        self.root = self._build(0, n + 1, None)
+
+    # 中序遍历输出结果
+    def inorder(self, x, res):
+        if not x:
+            return
+        self._push_down(x)
+        self.inorder(x.l, res)
+        res.append(str(x.key))
+        self.inorder(x.r, res)
+
+    # 获取最终序列
+    def get_result(self):
+        res = []
+        self.inorder(self.root, res)
+        # 去掉首尾哨兵
+        return ' '.join(res[1:-1])
+```
+
+
+带区间翻转的Splay
+
+
+文艺平衡树核心功能：
+- 翻转区间 [l, r]
+- 插入、删除、查第 k 个、遍历输出
+- 用 懒标记（lazy） 实现区间翻转，和线段树思路一样
 
 
 #### 红黑树
+```python
+class Node:
+    RED = True
+    BLACK = False
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+        self.parent = None
+        self.color = Node.RED  # 新节点一定是红色
+
+class RedBlackTree:
+    def __init__(self):
+        self.NIL = Node(0)
+        self.NIL.color = Node.BLACK
+        self.root = self.NIL
+
+    def left_rotate(self, x):
+        y = x.right
+        x.right = y.left
+        if y.left != self.NIL:
+            y.left.parent = x
+
+        y.parent = x.parent
+        if x.parent == self.NIL:
+            self.root = y
+        elif x == x.parent.left:
+            x.parent.left = y
+        else:
+            x.parent.right = y
+        y.left = x
+        x.parent = y
+
+    def right_rotate(self, y):
+        x = y.left
+        y.left = x.right
+        if x.right != self.NIL:
+            x.right.parent = y
+
+        x.parent = y.parent
+        if y.parent == self.NIL:
+            self.root = x
+        elif y == y.parent.right:
+            y.parent.right = x
+        else:
+            y.parent.left = x
+        x.right = y
+        y.parent = x
+
+    def fix_insert(self, z):
+        while z.parent.color == Node.RED:
+            if z.parent == z.parent.parent.left:
+                y = z.parent.parent.right
+                if y.color == Node.RED:
+                    z.parent.color = Node.BLACK
+                    y.color = Node.BLACK
+                    z.parent.parent.color = Node.RED
+                    z = z.parent.parent
+                else:
+                    if z == z.parent.right:
+                        z = z.parent
+                        self.left_rotate(z)
+                    z.parent.color = Node.BLACK
+                    z.parent.parent.color = Node.RED
+                    self.right_rotate(z.parent.parent)
+            else:
+                y = z.parent.parent.left
+                if y.color == Node.RED:
+                    z.parent.color = Node.BLACK
+                    y.color = Node.BLACK
+                    z.parent.parent.color = Node.RED
+                    z = z.parent.parent
+                else:
+                    if z == z.parent.left:
+                        z = z.parent
+                        self.right_rotate(z)
+                    z.parent.color = Node.BLACK
+                    z.parent.parent.color = Node.RED
+                    self.left_rotate(z.parent.parent)
+            if z == self.root:
+                break
+        self.root.color = Node.BLACK
+
+    def insert(self, key):
+        z = Node(key)
+        z.left = self.NIL
+        z.right = self.NIL
+
+        y = self.NIL
+        x = self.root
+        while x != self.NIL:
+            y = x
+            if z.key < x.key:
+                x = x.left
+            else:
+                x = x.right
+
+        z.parent = y
+        if y == self.NIL:
+            self.root = z
+        elif z.key < y.key:
+            y.left = z
+        else:
+            y.right = z
+        self.fix_insert(z)
+
+    def find(self, key):
+        current = self.root
+        while current != self.NIL:
+            if key == current.key:
+                return True
+            elif key < current.key:
+                current = current.left
+            else:
+                current = current.right
+        return False
+
+    def inorder(self, node, res):
+        if node == self.NIL:
+            return
+        self.inorder(node.left, res)
+        res.append(str(node.key))
+        self.inorder(node.right, res)
+
+    def get_sorted(self):
+        res = []
+        self.inorder(self.root, res)
+        return ' '.join(res)
+```
+
+自平衡 BST，靠 5 条颜色约束限制最长路径≤2× 最短路径，树高严格 O (logn)，插入删除 O (logn)
+C++ map/set、Java TreeMap 底层就是它
+
+红黑树核心：
+1. 每个节点黑或红；根固定黑色
+2. 所有空叶子 (NIL) 统一黑色（哨兵叶子，简化边界）
+3. 红节点的两个子节点一定是黑色（不能红红相连）
+4. 从任意节点到其所有 NIL 叶子，经过的黑节点数量相等（黑高一致）
 
 #### 笛卡尔树
+```python
+def build_cartesian_tree(arr):
+    """
+    构建小根笛卡尔树
+    返回：
+        root: 根节点下标
+        ls: 左孩子数组 ls[i] = 左儿子下标
+        rs: 右孩子数组 rs[i] = 右儿子下标
+    """
+    n = len(arr)
+    ls = [-1] * n   # 左孩子
+    rs = [-1] * n   # 右孩子
+    stack = []      # 单调栈，维护右链
+    root = 0
+
+    for i in range(n):
+        last = -1
+        # 弹出所有比当前大的（小根堆）
+        while stack and arr[stack[-1]] > arr[i]:
+            last = stack.pop()
+
+        # 最后弹出的作为 i 的左孩子
+        if last != -1:
+            ls[i] = last
+
+        # 栈不空，当前 i 是栈顶的右孩子
+        if stack:
+            rs[stack[-1]] = i
+        else:
+            root = i  # 栈空，当前是新根
+
+        stack.append(i)
+
+    return root, ls, rs
+
+
+# ------------------- 测试 -------------------
+if __name__ == "__main__":
+    a = [4, 3, 2, 5, 1]
+    root, ls, rs = build_cartesian_tree(a)
+
+    print("根节点:", root)
+    print("左孩子:", ls)
+    print("右孩子:", rs)
+```
+
+笛卡尔树 (Cartesian Tree)：下标满足 BST，权值满足堆，一个数组唯一对应一棵树
+
+
 #### 替罪羊树
+```python
+ALPHA = 0.7  # 平衡系数
+
+class Node:
+    __slots__ = ["val", "l", "r", "sz", "cnt", "del"]
+    def __init__(self, v):
+        self.val = v
+        self.l = self.r = None
+        self.sz = 1    # 子树总大小(含删除点)
+        self.cnt = 1   # 本节点有效数量
+        self.del = False # 懒删除标记
+
+class Scapegoat:
+    def __init__(self):
+        self.root = None
+        self.buf = [] # 存拍扁后的有序节点
+
+    def up(self, u): # 更新sz、cnt
+        if not u: return
+        u.sz = 1
+        u.cnt = 0 if u.del else 1
+        if u.l:
+            u.sz += u.l.sz
+            u.cnt += u.l.cnt
+        if u.r:
+            u.sz += u.r.sz
+            u.cnt += u.r.cnt
+
+    def flat(self, u): # 中序拍扁
+        if not u: return
+        self.flat(u.l)
+        if not u.del:
+            self.buf.append(u.val)
+        self.flat(u.r)
+
+    def build(self, l, r): # 数组[l,r]建平衡树
+        if l > r: return None
+        mid = (l + r) // 2
+        u = Node(self.buf[mid])
+        u.l = self.build(l, mid-1)
+        u.r = self.build(mid+1, r)
+        self.up(u)
+        return u
+
+    def rebuild(self, fa, is_left): # 重构替罪羊
+        self.buf.clear()
+        self.flat(fa)
+        new = self.build(0, len(self.buf)-1)
+        if self.root == fa:
+            self.root = new
+        return new
+
+    def insert(self, u, v): # 返回是否需要重构
+        if u is None:
+            return True, Node(v)
+        need = False
+        if v < u.val:
+            need, u.l = self.insert(u.l, v)
+        elif v > u.val:
+            need, u.r = self.insert(u.r, v)
+        else:
+            if not u.del: u.cnt +=1
+            else: u.del=False; u.cnt=1
+        self.up(u)
+        # 判断失衡
+        if need and (
+            (u.l and u.l.sz > ALPHA*u.sz) or
+            (u.r and u.r.sz > ALPHA*u.sz)
+        ):
+            u = self.rebuild(u, False)
+            need = False
+        return need, u
+
+    def add(self, v):
+        _, self.root = self.insert(self.root, v)
+
+    def find_kth(self, k): # 查第k小数
+        u = self.root
+        while u:
+            lcnt = u.l.cnt if u.l else 0
+            if k <= lcnt:
+                u = u.l
+            elif k <= lcnt + u.cnt:
+                return u.val
+            else:
+                k -= lcnt + u.cnt
+                u = u.r
+        return None
+
+    def del_val(self, v): # 懒删除
+        def dfs(u):
+            if not u: return None
+            if v < u.val:
+                u.l = dfs(u.l)
+            elif v > u.val:
+                u.r = dfs(u.r)
+            else:
+                u.del = True
+                u.cnt = 0
+            self.up(u)
+            return u
+        self.root = dfs(self.root)
+
+# ======测试======
+if __name__=="__main__":
+    st = Scapegoat()
+    arr = [5,3,7,1,4,6,9,2]
+    for x in arr:
+        st.add(x)
+    print(st.find_kth(3)) # 第3小：3
+    st.del_val(3)
+    print(st.find_kth(3)) # 删除后第3小：4
+```
+
+替罪羊树（Scapegoat Tree）：不用旋转、失衡直接暴力拆子树重建成完全 BST 的平衡 BST，靠重构保平衡
+
 
 #### k-d树
+
+
+k-d 树（K-Dimensional Tree）:多维空间专用二叉搜索树，逐层轮换维度切分空间，主打 K 近邻、空间范围查找（KNN 标配）
 
 
 ### 分块
@@ -1904,7 +2859,99 @@ if __name__ == "__main__":
 
 
 
-### 珂朵莉树ODT
+### ODT
+```python
+from sortedcontainers import SortedList
+
+class Node:
+    __slots__ = ['l','r','val']
+    def __init__(self,l,r,val):
+        self.l = l
+        self.r = r
+        self.val = val
+    def __lt__(self,o):
+        return self.l < o.l
+
+class ODT:
+    def __init__(self, arr):
+        self.sl = SortedList()
+        n = len(arr)
+        # 初始化整块
+        pre = arr[0]
+        st = 0
+        for i in range(1,n):
+            if arr[i] != pre:
+                self.sl.add(Node(st,i-1,pre))
+                pre = arr[i]
+                st = i
+        self.sl.add(Node(st,n-1,pre))
+
+    def split(self, pos):
+        """切pos，返回起点为pos的块下标"""
+        idx = self.sl.bisect_left(Node(pos,0,0))
+        if idx < len(self.sl) and self.sl[idx].l == pos:
+            return idx
+        idx -= 1
+        nd = self.sl.pop(idx)
+        l,r,v = nd.l,nd.r,nd.val
+        # 拆成 [l,pos-1] [pos,r]
+        self.sl.add(Node(l,pos-1,v))
+        self.sl.add(Node(pos,r,v))
+        return idx+1
+
+    def assign(self,l,r,val):
+        """区间[l,r]全赋值val，核心操作"""
+        pr = self.split(r+1)
+        pl = self.split(l)
+        # 删除中间所有块
+        del self.sl[pl:pr]
+        self.sl.add(Node(l,r,val))
+
+    def range_add(self,l,r,x):
+        """区间[l,r]加x"""
+        pr = self.split(r+1)
+        pl = self.split(l)
+        for i in range(pl,pr):
+            self.sl[i].val += x
+
+    def range_kth(self,l,r,k):
+        """区间第k小"""
+        pr = self.split(r+1)
+        pl = self.split(l)
+        tmp = []
+        for i in range(pl,pr):
+            nd = self.sl[i]
+            cnt = nd.r - nd.l + 1
+            tmp += [(nd.val,cnt)]
+        tmp.sort()
+        s = 0
+        for v,c in tmp:
+            s += c
+            if s >= k:
+                return v
+        return -1
+
+# ==========测试==========
+if __name__ == '__main__':
+    a = [1,2,2,3,3,3,4,5]
+    odt = ODT(a)
+    odt.assign(1,4,99) # [1~4]赋值99
+    odt.range_add(3,6,10)
+    print(odt.range_kth(0,7,4))
+```
+
+珂朵莉树：用有序集合保存「连续同值区间块」，靠区间推平 (assign) 压缩块数量，随机数据下效率极高，本质是暴力优化技巧，不是传统平衡树
+
+
+ODT核心：把序列拆成若干段：`[l_1,r_1,v_1]`,`[l_2,r_2,v_2]`，同值连续合并成一块，用有序容器按左端点排序存储
+- split(pos)：在pos处切分区间，保证以pos为左端点的区间单独存在，返回该区间迭代器（区间操作的前置）
+- assign(l,r,val)：区间赋值，先split(l)、split(r+1)，删掉中间所有块，新建一个`[l,r,val]`整块，ODT 效率全靠这个推平合并
+
+
+ODT核心功能：
+- 区间赋值 assign：split(l),split(r+1)删中间、插新块
+- 区间加 / 遍历：split(l),split(r+1)逐个遍历块修改
+- 区间 k 小 / 区间幂和：遍历块统计长度，暴力计算（ODT 强项）
 
 ### 动态树LCT
 
@@ -1942,7 +2989,86 @@ if __name__ == "__main__":
 
 
 ### 字典树
+```python
+from typing import Optional, List
 
+class Node:
+    __slots__ = ("son", "cnt", "end")  # son: 子节点, cnt: 经过次数, end: 结束次数
+
+    def __init__(self):
+        self.son: List[Optional[Node]] = [None] * 26  # 26个小写字母
+        self.cnt: int = 0  # 这个节点被经过多少次
+        self.end: int = 0  # 有多少个字符串以这个节点结尾
+
+class Trie:
+    def __init__(self):
+        self.root: Node = Node()
+
+    # 插入字符串
+    def put(self, s: str) -> None:
+        cur = self.root
+        for ch in s:
+            c = ord(ch) - ord('a')
+            if not cur.son[c]:
+                cur.son[c] = Node()
+            cur = cur.son[c]
+            cur.cnt += 1  # 经过次数 +1
+        cur.end += 1  # 结尾次数 +1
+
+    # 删除字符串（必须存在才能删）
+    def delete(self, s: str) -> None:
+        cur = self.root
+        for ch in s:
+            c = ord(ch) - ord('a')
+            cur = cur.son[c]
+            cur.cnt -= 1
+        cur.end -= 1
+
+    # 查询是否存在这个字符串
+    def exist(self, s: str) -> bool:
+        cur = self.root
+        for ch in s:
+            c = ord(ch) - ord('a')
+            if not cur.son[c] or cur.son[c].cnt == 0:
+                return False
+            cur = cur.son[c]
+        return cur.end > 0
+
+    # 查询有多少个字符串以 s 为前缀
+    def count_prefix(self, s: str) -> int:
+        cur = self.root
+        for ch in s:
+            c = ord(ch) - ord('a')
+            if not cur.son[c] or cur.son[c].cnt == 0:
+                return 0
+            cur = cur.son[c]
+        return cur.cnt
+
+    # 查询字符串 s 出现多少次
+    def count_str(self, s: str) -> int:
+        cur = self.root
+        for ch in s:
+            c = ord(ch) - ord('a')
+            if not cur.son[c] or cur.son[c].cnt == 0:
+                return 0
+            cur = cur.son[c]
+        return cur.end
+
+if __name__ == "__main__":
+    trie = Trie()
+
+    trie.put("apple")
+    trie.put("app")
+    trie.put("application")
+
+    print(trie.exist("app"))          # True
+    print(trie.exist("ap"))           # False
+    print(trie.count_prefix("app"))   # 3
+    print(trie.count_str("apple"))    # 1
+
+    trie.delete("app")
+    print(trie.exist("app"))          # False
+```
 
 #### 0-1 字典树
 ```python
@@ -2012,57 +3138,6 @@ class Trie:
 
 ### KMP
 ```python
-def KMP_search(text, pattern):
-    """
-        text: 主字符串
-        pattern: 要查询的匹配字符串
-    """
-
-
-    # 计算部分匹配表
-    def compute_pi(pattern):
-        m = len(pattern)
-        pi = [0] * m  # 部分匹配表
-        k = 0  # 前缀后缀匹配的长度
-        for i in range(1, m):
-            while k > 0 and pattern[k] != pattern[i]:
-                # 当前不匹配，回跳（pi[k-1]前一个字符结尾匹配的前缀长度）
-                k = pi[k - 1]
-            if pattern[k] == pattern[i]:
-                k += 1
-            pi[i] = k
-        return pi
-
-    # 主字符串和模式字符串的长度
-    n = len(text)
-    m = len(pattern)
-
-    # 构造部分匹配表
-    pi = compute_pi(pattern)
-
-    # 匹配过程
-    q = 0  # 模式串的匹配位置
-    for i in range(n):
-        while q > 0 and pattern[q] != text[i]:
-            q = pi[q - 1]  # 通过部分匹配表跳跃
-
-        if pattern[q] == text[i]:
-            q += 1
-
-        if q == m:  # 找到匹配
-            print(f"Pattern found at index {i - m + 1}")
-            q = pi[q - 1]  # 使用部分匹配表跳到下一位置
-
-if __name__ == "__main__":
-    # 示例
-    text = "ababcababcababc"
-    pattern = "ababc"
-    KMP_search(text, pattern)
-
-
-
-
-
 def kmp_search(S: str, P: str) -> int:
     """获取第一次匹配成功的索引"""
 
@@ -2095,10 +3170,9 @@ def kmp_search(S: str, P: str) -> int:
 最长的前后缀匹配长度
 
 `pi[i]`: 部分匹配表
-- 表示子串 pattern[0...i] 的最长相同前后缀的长度
+- 表示子串 `pattern[0...i]` 的最长相同前后缀的长度
 - 每个位置之前的子字符串的最长相同前后缀的长度
-- 表示以 pattern[i] 结尾的子串中，最长的前后缀匹配长度
-
+- 表示以 `pattern[i]` 结尾的子串中，最长的前后缀匹配长度
 
 字符串匹配
 KMP 算法的核心思想是：
@@ -2106,30 +3180,8 @@ KMP 算法的核心思想是：
 - 匹配阶段：利用部分匹配表来决定匹配失败时应该跳到哪里，从而避免无谓的回退
 
 KMP 算法步骤
-- 部分匹配表：pi[i] 表示字符串 pattern[0...i] 的最大前后缀匹配长度。这个表可以帮助我们在出现不匹配时，不用回溯到 i-1，而是直接跳到 pi[i-1] 位置。
+- 部分匹配表：`pi[i]` 表示字符串 `pattern[0...i]` 的最大前后缀匹配长度。这个表可以帮助我们在出现不匹配时，不用回溯到 i-1，而是直接跳到 `pi[i-1]` 位置。
 - 匹配过程：在匹配主字符串和模式字符串时，如果遇到不匹配的字符，利用 pi 表来跳过已知的匹配部分，减少不必要的比较
-
-
-
-KMP实例：
-模式串：pattern = "aabaa"
-我们来一步步计算它的 pi 数组。
-
-计算过程：
-1. pi[0]：
-    pattern[0] = 'a'，这是模式串的第一个字符。它没有前缀和后缀，所以 pi[0] = 0。
-2. pi[1]：
-    pattern[0...1] = "aa"。
-    子串 "aa" 的前缀是 'a'，后缀也是 'a'，最长的相同前后缀长度为 1，所以 pi[1] = 1。
-3. pi[2]：
-    pattern[0...2] = "aab"。
-    子串 "aab" 的前缀是 'a'，后缀是 'b'，没有相同的前后缀，因此 pi[2] = 0。
-4. pi[3]：
-    pattern[0...3] = "aaba"。
-    子串 "aaba" 的前缀是 'a'，后缀也是 'a'，最长的相同前后缀长度是 1，所以 pi[3] = 1。
-5. pi[4]：
-    pattern[0...4] = "aabaa"。
-    子串 "aabaa" 的前缀是 'aa'，后缀也是 'aa'，最长的相同前后缀长度是 2，所以 pi[4] = 2
 
 
 
@@ -2162,10 +3214,10 @@ def get_z(s: str) -> List[int]:
 - 常用于：字符串哈希、多个匹配点查找、前缀分析等
 
 Z函数原理：
-- 维护一个匹配区间 [l, r]，表示 s[l:r+1] 是与 s[0:r-l+1] 完全相同的子串
+- 维护一个匹配区间 `[l, r]`，表示 `s[l:r+1]` 是与 `s[0:r-l+1]` 完全相同的子串
     - 如果 i > r，说明 i 不在当前匹配区间中，我们只能从头开始匹配
     - 如果 i <= r，说明 i 在 [l, r] 里了，我们可以利用之前的结果来复用匹配信息 
-- next[i]是以i结尾，Z[i]是以i开头
+- `next[i]`是以i结尾，`Z[i]`是以i开头
 
 
 ### Manacher
@@ -2514,8 +3566,186 @@ def get_sa(arr):
 
 
 ### 后缀自动机
+```python
+class State:
+    __slots__ = ['len', 'link', 'next', 'cnt', 'endpos']
+    def __init__(self):
+        self.len = 0           # 该状态最长子串长度
+        self.link = -1         # 后缀链接
+        self.next = dict()     # 转移 {char: state}
+        self.cnt = 0           # 子串出现次数
+        self.endpos = 0        # 子串结束位置（用于求首次出现）
+
+class SAM:
+    def __init__(self):
+        self.states = [State()]
+        self.last = 0
+
+    def add(self, c):
+        """添加单个字符"""
+        cur = len(self.states)
+        self.states.append(State())
+        p = self.last
+        self.states[cur].len = self.states[p].len + 1
+        self.states[cur].endpos = self.states[cur].len - 1  # 结束位置
+
+        # 跳后缀链接更新转移
+        while p != -1 and c not in self.states[p].next:
+            self.states[p].next[c] = cur
+            p = self.states[p].link
+
+        if p == -1:
+            self.states[cur].link = 0
+        else:
+            q = self.states[p].next[c]
+            if self.states[p].len + 1 == self.states[q].len:
+                self.states[cur].link = q
+            else:
+                # 复制节点 clone
+                clone = len(self.states)
+                self.states.append(State())
+                self.states[clone].len = self.states[p].len + 1
+                self.states[clone].next = self.states[q].next.copy()
+                self.states[clone].link = self.states[q].link
+                self.states[clone].endpos = self.states[q].endpos
+
+                # 修正指向
+                while p != -1 and self.states[p].next.get(c, -1) == q:
+                    self.states[p].next[c] = clone
+                    p = self.states[p].link
+
+                self.states[q].link = clone
+                self.states[cur].link = clone
+
+        self.last = cur
+
+    def build(self, s):
+        """构建整个字符串"""
+        for c in s:
+            self.add(c)
+
+    # ==================== 1. 统计不同子串数量 ====================
+    def distinct_substrings(self):
+        res = 0
+        for i in range(1, len(self.states)):
+            res += self.states[i].len - self.states[self.states[i].link].len
+        return res
+
+    # ==================== 2. 计算每个子串出现次数 ====================
+    def calc_cnt(self):
+        # 初始化终止节点
+        p = self.last
+        while p != -1:
+            self.states[p].cnt = 1
+            p = self.states[p].link
+
+        # 按长度从大到小合并
+        order = sorted(range(len(self.states)), key=lambda x: -self.states[x].len)
+        for u in order:
+            if self.states[u].link != -1:
+                self.states[self.states[u].link].cnt += self.states[u].cnt
+
+    # ==================== 3. 最长重复子串（出现至少 2 次） ====================
+    def longest_repeated_substring(self):
+        self.calc_cnt()
+        max_len = 0
+        for i in range(1, len(self.states)):
+            if self.states[i].cnt >= 2 and self.states[i].len > max_len:
+                max_len = self.states[i].len
+        return max_len
+
+    # ==================== 4. 字典序第 k 小不同子串 ====================
+    def kth_substring(self, k):
+        self.calc_cnt()
+        res = []
+        u = 0
+
+        def dfs(node):
+            nonlocal k
+            for c in sorted(self.states[node].next):
+                v = self.states[node].next[c]
+                sz = self.states[v].len - self.states[self.states[v].link].len
+                if sz < k:
+                    k -= sz
+                else:
+                    res.append(c)
+                    dfs(v)
+                    return
+        dfs(0)
+        return ''.join(res) if res else ""
+
+    # ==================== 5. 求两个串的最长公共子串 ====================
+    @staticmethod
+    def longest_common_substring(s1, s2):
+        sam = SAM()
+        sam.build(s1)
+        p, res, cur_len = 0, 0, 0
+        for c in s2:
+            while p != 0 and c not in sam.states[p].next:
+                p = sam.states[p].link
+                cur_len = sam.states[p].len
+            if c in sam.states[p].next:
+                p = sam.states[p].next[c]
+                cur_len += 1
+            res = max(res, cur_len)
+        return res
+
+    # ==================== 6. 最小循环移位（最小表示法） ====================
+    def minimal_cyclic_shift(self, s):
+        sam = SAM()
+        sam.build(s + s)
+        u, res = 0, []
+        n = len(s)
+        for _ in range(n):
+            for c in sorted(sam.states[u].next):
+                u = sam.states[u].next[c]
+                res.append(c)
+                break
+        return ''.join(res)
+
+    # ==================== 7. 子串首次出现位置 ====================
+    def first_occur(self, t):
+        u = 0
+        for c in t:
+            if c not in self.states[u].next:
+                return -1
+            u = self.states[u].next[c]
+        return self.states[u].endpos - len(t) + 1
+
+if __name__ == "__main__":
+    s = "ababa"
+    sam = SAM()
+    sam.build(s)
+
+    print("=== 基础功能 ===")
+    print("不同子串数量：", sam.distinct_substrings())  # 9
+
+    sam.calc_cnt()
+    print("最长重复子串长度：", sam.longest_repeated_substring())  # 3
+
+    print("第 2 小字典序子串：", sam.kth_substring(2))  # a
+
+    print("首次出现位置 'aba'：", sam.first_occur("aba"))  # 0
+
+    print("\n=== 公共子串 ===")
+    print("ababa 和 abcba 最长公共子串：",
+          SAM.longest_common_substring("ababa", "abcba"))  # 2
+
+    print("\n=== 最小循环移位 ===")
+    print("cba 最小循环：", SAM().minimal_cyclic_shift("cba"))  # acb
+```
+
+后缀自动机 SAM（Suffix Automaton）
 
 
+SAM核心功能：
+- 统计不同子串数量
+- 求每个子串出现次数
+- 求最长重复子串
+- 求两个串最长公共子串
+- 求字典序第 k 小子串
+- 求最小循环移位
+- 求子串首次出现位置
 
 
 ## 动态规划
@@ -3928,11 +5158,17 @@ class Matrix:
 ### 计算几何
 
 
+#### 多边形面积
+
+
+#### 凸包
+
+
 #### 圆
 
 
 
-#### 凸包
+
 
 
 
