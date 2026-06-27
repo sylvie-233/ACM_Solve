@@ -1,0 +1,12 @@
+{
+    // C/C++ 语言专属配置
+    "[cpp]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.detectIndentation": false,
+        "editor.rulers": [
+            80
+        ], // Google规范行宽80字符
+    }
+}
