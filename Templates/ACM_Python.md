@@ -1735,6 +1735,158 @@ class SegmentTree:
 #### 0-1 线段树
 
 
+
+#### 扫描线
+
+##### 面积并
+```python
+class SegmentTree:
+    def __init__(self, xs):
+        """
+        xs: 离散化后的x坐标数组（去重排序）
+        线段树维护区间是 xs 的下标 [0, len(xs)-2]，每个节点代表线段 [xs[i], xs[i+1]]
+        """
+        self.xs = xs
+        self.m = len(xs) - 1  # 有效线段条数
+        self.size = self.m
+        self.cover = [0] * (4 * self.size)   # 区间被覆盖次数
+        self.length = [0] * (4 * self.size)   # 区间有效覆盖长度
+        self.lazy = [0] * (4 * self.size)     # 覆盖延迟标记
+        self._build(0, 0, self.size - 1)
+
+    def _build(self, node, l, r):
+        if l == r:
+            self.length[node] = 0
+            self.cover[node] = 0
+            self.lazy[node] = 0
+            return
+        mid = (l + r) // 2
+        self._build(node * 2 + 1, l, mid)
+        self._build(node * 2 + 2, mid + 1, r)
+        self._push_up(node, l, r)
+
+    def _push_up(self, node, l, r):
+        """更新当前节点的有效长度"""
+        if self.cover[node] > 0:
+            # 当前区间整体被覆盖，长度直接取坐标差值
+            self.length[node] = self.xs[r + 1] - self.xs[l]
+        else:
+            if l == r:
+                # 叶子节点无左右孩子，长度0
+                self.length[node] = 0
+            else:
+                # 累加左右子树有效长度
+                self.length[node] = self.length[node * 2 + 1] + self.length[node * 2 + 2]
+
+    def _push_down(self, node, l, r):
+        """下传覆盖标记，只有非叶子且lazy≠0才操作"""
+        if self.lazy[node] == 0 or l == r:
+            return
+        mid = (l + r) // 2
+        left = node * 2 + 1
+        right_node = node * 2 + 2
+
+        # 左子树更新
+        self.cover[left] += self.lazy[node]
+        self.lazy[left] += self.lazy[node]
+        # 右子树更新
+        self.cover[right_node] += self.lazy[node]
+        self.lazy[right_node] += self.lazy[node]
+
+        # 清空当前lazy
+        self.lazy[node] = 0
+        # 下传后更新子树长度
+        self._push_up(left, l, mid)
+        self._push_up(right_node, mid + 1, r)
+
+    def update_range(self, ul, ur, val):
+        """
+        区间 [ul, ur] 覆盖次数 +val
+        ul, ur: xs数组下标，对应线段区间 [xs[ul], xs[ur+1]]
+        val=1 加入扫描线，val=-1 移除扫描线
+        """
+        self._update(0, 0, self.size - 1, ul, ur, val)
+
+    def _update(self, node, l, r, ul, ur, val):
+        if ul <= l and r <= ur:
+            self.cover[node] += val
+            self.lazy[node] += val
+            self._push_up(node, l, r)
+            return
+        self._push_down(node, l, r)
+        mid = (l + r) // 2
+        if ul <= mid:
+            self._update(node * 2 + 1, l, mid, ul, ur, val)
+        if ur > mid:
+            self._update(node * 2 + 2, mid + 1, r, ul, ur, val)
+        self._push_up(node, l, r)
+
+    def get_total_len(self):
+        """获取全局总有效覆盖长度"""
+        return self.length[0]
+
+
+def calc_rect_area(rects):
+    """
+    计算多个矩形面积并
+    rects: list[(x1, y1, x2, y2)] 左下角(x1,y1) 右上角(x2,y2)
+    返回总面积
+    """
+    lines = []
+    xs = []
+    for x1, y1, x2, y2 in rects:
+        # 下边界：加入覆盖 +1
+        lines.append((y1, x1, x2, 1))
+        # 上边界：移除覆盖 -1
+        lines.append((y2, x1, x2, -1))
+        xs.append(x1)
+        xs.append(x2)
+    # 离散化x坐标
+    xs = sorted(list(set(xs)))
+    x2idx = {v: i for i, v in enumerate(xs)}
+    # 按y从小到大排序扫描线
+    lines.sort()
+    st = SegmentTree(xs)
+    area = 0
+    prev_y = None
+    for y, x1, x2, val in lines:
+        if prev_y is not None and y > prev_y:
+            # 高度差 × 当前有效x覆盖长度
+            h = y - prev_y
+            area += h * st.get_total_len()
+        # 映射到离散下标更新线段树
+        l = x2idx[x1]
+        r = x2idx[x2] - 1
+        st.update_range(l, r, val)
+        prev_y = y
+    return area
+
+
+# ------------------- 测试示例 -------------------
+if __name__ == "__main__":
+    # 两个重叠矩形
+    rects = [
+        (0, 0, 2, 2),
+        (1, 1, 3, 3)
+    ]
+    print(calc_rect_area(rects))  # 输出 7
+```
+
+题目描述：
+给定平面上若干个矩形，矩形边平行于坐标轴，每个矩形给出左下角坐标 (x_1,y_1)、右上角坐标 (x_2,y_2)。
+求所有矩形覆盖区域的总面积（重叠区域只算一次）。
+
+
+算法流程：
+1. 收集所有矩形左右 x 坐标做离散化（解决坐标极大问题）
+2. 拆矩形上下两条水平扫描线，标记 +1/-1
+3. 按 y 升序遍历扫描线：
+    - 相邻两条线的高度差 × 当前线段树总覆盖长度 = 中间条带面积
+    - 更新线段树 x 区间覆盖状态
+4. 累加所有条带面积得到总面积并
+
+![线段树扫描线](../.assets/线段树扫描线.png)
+
 ### 二叉搜索树BST
 
 #### AVL
