@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "main调试",
+            "type": "lldb",
+            "request": "launch",
+            // MSVC Kit Debug产物固定路径 build/Debug/xxx.exe
+            "program": "${workspaceFolder}/build/Debug/main.exe",
+            "args": [],        // 程序启动参数放这里
+            "cwd": "${workspaceFolder}",
+            "console": "externalTerminal", // 单独弹出黑窗口看输出
+        }
+    ]
+}
